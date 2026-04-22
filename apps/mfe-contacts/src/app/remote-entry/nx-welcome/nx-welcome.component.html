@@ -1,0 +1,84 @@
+<div class="min-h-screen bg-gray-50 p-8">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">mfe_contacts</h1>
+    <p class="mt-1 text-sm text-gray-500">Tailwind CSS + Angular Material test page</p>
+  </div>
+
+  <!-- Tailwind color swatches -->
+  <section class="mb-8">
+    <h2 class="mb-3 text-lg font-semibold text-gray-700">Tailwind Colors</h2>
+    <div class="flex gap-3">
+      <div class="h-12 w-12 rounded-lg bg-blue-500 shadow"></div>
+      <div class="h-12 w-12 rounded-lg bg-green-500 shadow"></div>
+      <div class="h-12 w-12 rounded-lg bg-red-500 shadow"></div>
+      <div class="h-12 w-12 rounded-lg bg-yellow-400 shadow"></div>
+      <div class="h-12 w-12 rounded-lg bg-purple-500 shadow"></div>
+      <div class="h-12 w-12 rounded-lg bg-pink-500 shadow"></div>
+    </div>
+  </section>
+
+  <!-- Tailwind typography -->
+  <section class="mb-8">
+    <h2 class="mb-3 text-lg font-semibold text-gray-700">Tailwind Typography</h2>
+    <div class="space-y-1">
+      <p class="text-4xl font-extrabold text-gray-900">text-4xl extrabold</p>
+      <p class="text-2xl font-bold text-gray-800">text-2xl bold</p>
+      <p class="text-xl font-semibold text-gray-700">text-xl semibold</p>
+      <p class="text-base font-normal text-gray-600">text-base normal</p>
+      <p class="text-sm font-light text-gray-500">text-sm light</p>
+    </div>
+  </section>
+
+  <!-- Angular Material buttons -->
+  <section class="mb-8">
+    <h2 class="mb-3 text-lg font-semibold text-gray-700">Angular Material Buttons</h2>
+    <div class="flex flex-wrap gap-3">
+      <button mat-raised-button color="primary">Primary</button>
+      <button mat-raised-button color="accent">Accent</button>
+      <button mat-raised-button color="warn">Warn</button>
+      <button mat-stroked-button color="primary">Stroked</button>
+      <button mat-flat-button color="primary">Flat</button>
+      <button mat-icon-button color="primary" [matBadge]="'3'" matBadgeColor="warn">
+        <span class="text-lg">&#9993;</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Angular Material card + Tailwind grid -->
+  <section class="mb-8">
+    <h2 class="mb-3 text-lg font-semibold text-gray-700">Material Cards + Tailwind Grid</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <mat-card *ngFor="let contact of contacts" class="cursor-pointer transition hover:shadow-lg">
+        <mat-card-content class="p-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full text-white font-bold"
+                 [class]="contact.color">
+              {{ contact.initials }}
+            </div>
+            <div>
+              <p class="font-semibold text-gray-800">{{ contact.name }}</p>
+              <p class="text-xs text-gray-400">{{ contact.status }}</p>
+            </div>
+            <span class="ml-auto inline-flex h-2 w-2 rounded-full"
+                  [class]="contact.online ? 'bg-green-400' : 'bg-gray-300'">
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
+
+  <!-- Tailwind badges -->
+  <section>
+    <h2 class="mb-3 text-lg font-semibold text-gray-700">Tailwind Badges</h2>
+    <div class="flex gap-2">
+      <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">Online</span>
+      <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">Offline</span>
+      <span class="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">Away</span>
+      <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">Busy</span>
+    </div>
+  </section>
+
+</div>

@@ -1,9 +1,16 @@
-import { Component } from '@angular/core';
-import { NxWelcome } from './nx-welcome';
+import { Component, NgModule } from '@angular/core';
+import { NxWelcomeModule } from './nx-welcome/nx-welcome.module';
 
 @Component({
-  imports: [NxWelcome],
   selector: 'app-mfe_contacts-entry',
   template: `<app-nx-welcome></app-nx-welcome>`,
+  standalone: true,
+  imports: [NxWelcomeModule],
 })
-export class RemoteEntry {}
+export class RemoteEntryComponent {}
+
+@NgModule({
+  imports: [RemoteEntryComponent],
+  exports: [RemoteEntryComponent],
+})
+export class RemoteEntryModule {}
