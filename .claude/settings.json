@@ -1,0 +1,9 @@
+{
+  "enabledSkills": {
+    "angular-developer": true,
+    "frontend-design": true,
+    "next-best-practices": true,
+    "vercel-react-best-practices": true,
+    "web-design-guidelines": true
+  }
+}

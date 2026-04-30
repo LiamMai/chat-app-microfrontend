@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "nx run-many --target=serve --projects=mfe_chat,mfe_contacts,shell --parallel --verbose",
-    "start:shell": "nx serve shell",
+    "start:shell": "nx serve shell --verbose",
     "start:chat": "nx serve mfe_chat",
     "start:contacts": "nx serve mfe_contacts",
     "build": "nx run-many --target=build --all --parallel",
