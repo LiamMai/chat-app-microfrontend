@@ -20,6 +20,18 @@ export const SHELL_API_PATHS = {
   USERS_ME_AVATAR: '/api/users/me/avatar',
 } as const;
 
+/** App route paths — single source of truth for all cross-app navigation */
+export const ROUTES = {
+  MESSAGES:           '/',
+  CONTACTS:           '/contacts',
+  CONTACTS_ADD:       '/contacts/add-friends',
+  CONTACTS_REQUESTS:  '/contacts/requests',
+  SETTINGS:           '/settings',
+  LOGIN:              '/login',
+  REGISTER:           '/register',
+  ONBOARDING:         '/onboarding',
+} as const;
+
 export const COOKIE_NAMES = {
   ACCESS_TOKEN:  'access_token',
   REFRESH_TOKEN: 'refresh_token',

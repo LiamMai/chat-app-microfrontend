@@ -4,6 +4,7 @@ const config: ModuleFederationConfig = {
   name: 'mfe_contacts',
   exposes: {
     './Routes': 'apps/mfe-contacts/src/app/remote-entry/entry.routes.ts',
+    './Mount': 'apps/mfe-contacts/src/remote-mount.ts',
   },
 };
 

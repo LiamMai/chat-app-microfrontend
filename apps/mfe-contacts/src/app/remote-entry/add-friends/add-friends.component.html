@@ -1,0 +1,326 @@
+<!-- Single unified layout, content only — sidebar and bottom nav removed (provided by shell) -->
+<div style="background: #0a0f1e; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- Mobile title bar (lg:hidden) — title only, no back button, no bottom nav -->
+  <div class="lg:hidden px-4 py-4 flex-shrink-0" style="background: #131929; border-bottom: 1px solid rgba(255,255,255,0.08);">
+    <h1 class="text-lg font-bold text-white tracking-tight">Add Friends</h1>
+  </div>
+
+  <!-- Mobile content (lg:hidden) -->
+  <div class="lg:hidden flex-1 overflow-y-auto px-4 pt-5 pb-6 flex flex-col gap-5">
+
+    <!-- Search input -->
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b9dc3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </span>
+      <input
+        type="text"
+        placeholder="Find people by name or username"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearch($event)"
+        class="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-colors"
+        style="background: #1a2235; border: 1px solid rgba(255,255,255,0.08); color: #fff;"
+      />
+    </div>
+
+    <!-- Recent searches -->
+    @if (recentSearches().length > 0) {
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold tracking-widest" style="color: #8b9dc3;">RECENT SEARCHES</span>
+          <button
+            (click)="clearAllRecentSearches()"
+            class="text-xs font-medium transition-colors"
+            style="color: #4d7af6;"
+          >
+            Clear all
+          </button>
+        </div>
+        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          @for (search of recentSearches(); track search.id) {
+            <div
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap flex-shrink-0"
+              style="background: #1a2235; border: 1px solid rgba(255,255,255,0.08); color: #fff;"
+            >
+              <span>{{ search.label }}</span>
+              <button
+                (click)="removeRecentSearch(search.id)"
+                class="flex items-center justify-center w-4 h-4 rounded-full transition-colors"
+                style="color: #8b9dc3;"
+                [attr.aria-label]="'Remove ' + search.label"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Suggested for you -->
+    <div>
+      <h2 class="text-base font-bold text-white mb-4">Suggested for you</h2>
+      <div class="flex flex-col gap-3">
+        @for (user of mobileSuggestedUsers; track user.id) {
+          <div
+            class="flex items-center gap-3 p-4 rounded-xl"
+            style="background: #131929; border: 1px solid rgba(255,255,255,0.08);"
+          >
+            <!-- Avatar with online dot -->
+            <div class="relative flex-shrink-0">
+              <div
+                class="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                [style.background]="user.avatarColor"
+              >
+                {{ user.initials }}
+              </div>
+              @if (user.isOnline) {
+                <span
+                  class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+                  style="background: #22c55e; border-color: #131929;"
+                ></span>
+              }
+            </div>
+
+            <!-- Name / username -->
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-white truncate">{{ user.name }}</p>
+              <p class="text-xs truncate" style="color: #8b9dc3;">&#64;{{ user.username }}</p>
+              <p class="text-xs mt-0.5" style="color: #8b9dc3;">{{ user.mutualCount }} mutual friends</p>
+            </div>
+
+            <!-- Request button -->
+            <button
+              (click)="toggleRequest(user.id)"
+              class="px-4 py-2 rounded-lg text-xs font-semibold transition-all flex-shrink-0"
+              [style.background]="user.requestSent ? 'rgba(255,255,255,0.08)' : '#4d7af6'"
+              [style.color]="user.requestSent ? '#8b9dc3' : '#fff'"
+            >
+              {{ user.requestSent ? 'Sent' : 'Request' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Desktop content (hidden lg:block) -->
+  <div class="hidden lg:block flex-1 overflow-y-auto px-10 py-10">
+
+    <!-- Hero heading -->
+    <div class="text-center mb-10">
+      <h1 class="text-4xl font-bold text-white mb-3">Expand Your Network</h1>
+      <p class="text-base" style="color: #8b9dc3;">Discover and connect with people who share your interests</p>
+    </div>
+
+    <!-- Search bar -->
+    <div class="flex gap-3 mb-8 max-w-2xl mx-auto">
+      <div class="relative flex-1">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b9dc3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </span>
+        <input
+          type="text"
+          placeholder="Search people by name or username..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="onSearch($event)"
+          class="w-full pl-12 pr-4 py-3 rounded-xl text-sm outline-none"
+          style="background: #131929; border: 1px solid rgba(255,255,255,0.08); color: #fff;"
+        />
+      </div>
+      <button
+        class="px-6 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        style="background: #4d7af6;"
+      >
+        Search
+      </button>
+    </div>
+
+    <!-- Recent searches row -->
+    @if (recentSearches().length > 0) {
+      <div class="flex items-center gap-3 mb-8 flex-wrap">
+        <span class="text-xs font-semibold tracking-widest flex-shrink-0" style="color: #8b9dc3;">RECENT:</span>
+        @for (search of recentSearches(); track search.id) {
+          <div
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors"
+            style="background: #131929; border: 1px solid rgba(255,255,255,0.08); color: #fff;"
+          >
+            {{ search.label }}
+            <button
+              (click)="removeRecentSearch(search.id)"
+              style="color: #8b9dc3;"
+              [attr.aria-label]="'Remove ' + search.label"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        }
+        <button
+          (click)="clearAllRecentSearches()"
+          class="text-xs font-medium ml-auto"
+          style="color: #4d7af6;"
+        >
+          Clear all
+        </button>
+      </div>
+    }
+
+    <!-- Search results header -->
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-white">Search Results <span class="text-sm font-normal" style="color: #8b9dc3;">({{ suggestedUsers().length }} found)</span></h2>
+      <button class="text-sm font-medium" style="color: #4d7af6;">
+        View all results →
+      </button>
+    </div>
+
+    <!-- 3-column results grid -->
+    <div class="grid grid-cols-3 gap-4 mb-12">
+      @for (user of suggestedUsers(); track user.id) {
+        <div
+          class="flex flex-col items-center gap-3 p-5 rounded-2xl transition-all"
+          style="background: #131929; border: 1px solid rgba(255,255,255,0.08);"
+        >
+          <!-- Avatar + online dot -->
+          <div class="relative">
+            <div
+              class="w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold text-white"
+              [style.background]="user.avatarColor"
+            >
+              {{ user.initials }}
+            </div>
+            @if (user.isOnline) {
+              <span
+                class="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2"
+                style="background: #22c55e; border-color: #131929;"
+              ></span>
+            }
+          </div>
+
+          <!-- Info -->
+          <div class="text-center">
+            <p class="text-sm font-semibold text-white">{{ user.name }}</p>
+            <p class="text-xs mt-0.5" style="color: #8b9dc3;">&#64;{{ user.username }}</p>
+            <p class="text-xs mt-1" style="color: #8b9dc3;">{{ user.mutualCount }} mutual friends</p>
+          </div>
+
+          <!-- Action button -->
+          <button
+            (click)="toggleRequest(user.id)"
+            class="w-full py-2 rounded-lg text-xs font-semibold transition-all"
+            [style.background]="user.requestSent ? 'rgba(255,255,255,0.06)' : '#4d7af6'"
+            [style.color]="user.requestSent ? '#8b9dc3' : '#fff'"
+          >
+            {{ user.requestSent ? 'Request Sent' : 'Add Friend' }}
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- People You May Know -->
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-white">People You May Know</h2>
+      <div class="flex gap-2">
+        <button
+          class="flex items-center justify-center w-8 h-8 rounded-full transition-colors"
+          style="background: #131929; border: 1px solid rgba(255,255,255,0.08);"
+          aria-label="Previous"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b9dc3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <button
+          class="flex items-center justify-center w-8 h-8 rounded-full transition-colors"
+          style="background: #131929; border: 1px solid rgba(255,255,255,0.08);"
+          aria-label="Next"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b9dc3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Featured card + side cards -->
+    <div class="grid grid-cols-3 gap-4">
+      <!-- Featured large card -->
+      <div
+        class="col-span-1 flex flex-col justify-between p-6 rounded-2xl min-h-48"
+        style="background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%); border: 1px solid rgba(77,122,246,0.3);"
+      >
+        <div class="flex items-start justify-between">
+          <div
+            class="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white"
+            style="background: rgba(255,255,255,0.2);"
+          >
+            AR
+          </div>
+          <span
+            class="px-2.5 py-1 rounded-full text-xs font-semibold"
+            style="background: #22c55e; color: #fff;"
+          >
+            Recommended
+          </span>
+        </div>
+        <div>
+          <p class="font-bold text-white mt-4">Alex Rivera</p>
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.7);">&#64;alexrivera · 12 mutual</p>
+          <button
+            class="mt-4 w-full py-2 rounded-lg text-xs font-semibold text-white"
+            style="background: rgba(255,255,255,0.2);"
+          >
+            Add Friend
+          </button>
+        </div>
+      </div>
+
+      <!-- 2x2 smaller cards -->
+      <div class="col-span-2 grid grid-cols-2 gap-4">
+        @for (user of suggestedUsers().slice(0, 4); track user.id) {
+          <div
+            class="flex items-center gap-3 p-4 rounded-2xl"
+            style="background: #131929; border: 1px solid rgba(255,255,255,0.08);"
+          >
+            <div class="relative flex-shrink-0">
+              <div
+                class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                [style.background]="user.avatarColor"
+              >
+                {{ user.initials }}
+              </div>
+              @if (user.isOnline) {
+                <span
+                  class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
+                  style="background: #22c55e; border-color: #131929;"
+                ></span>
+              }
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-white truncate">{{ user.name }}</p>
+              <p class="text-xs truncate" style="color: #8b9dc3;">{{ user.mutualCount }} mutual</p>
+            </div>
+            <button
+              (click)="toggleRequest(user.id)"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0 transition-all"
+              [style.background]="user.requestSent ? 'rgba(255,255,255,0.06)' : 'rgba(77,122,246,0.15)'"
+              [style.color]="user.requestSent ? '#8b9dc3' : '#4d7af6'"
+            >
+              {{ user.requestSent ? 'Sent' : '+ Add' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+</div>

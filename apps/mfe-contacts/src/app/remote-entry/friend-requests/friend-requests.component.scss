@@ -1,0 +1,7 @@
+/* Smooth hover for interactive elements */
+a,
+button {
+  &:hover {
+    opacity: 0.85;
+  }
+}

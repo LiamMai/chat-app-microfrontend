@@ -1,11 +1,12 @@
 import { Component, NgModule } from '@angular/core';
-import { NxWelcomeModule } from './nx-welcome/nx-welcome.module';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-mfe_contacts-entry',
-  template: `<app-nx-welcome></app-nx-welcome>`,
+  selector: 'app-mfe-contacts-entry',
   standalone: true,
-  imports: [NxWelcomeModule],
+  imports: [CommonModule, RouterModule],
+  template: `<router-outlet></router-outlet>`,
 })
 export class RemoteEntryComponent {}
 

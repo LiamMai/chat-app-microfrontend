@@ -1,0 +1,17 @@
+/* Hide scrollbar for recent search chips row */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Smooth hover on sidebar nav items */
+a,
+button {
+  &:hover {
+    opacity: 0.85;
+  }
+}
