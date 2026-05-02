@@ -15,6 +15,7 @@ export const API_PATHS = {
 export const SHELL_API_PATHS = {
   AUTH_LOGIN:      '/api/auth/login',
   AUTH_REGISTER:   '/api/auth/register',
+  AUTH_REFRESH:    '/api/auth/refresh',
   AUTH_LOGOUT:     '/api/auth/logout',
   USERS_ME:        '/api/users/me',
   USERS_ME_AVATAR: '/api/users/me/avatar',

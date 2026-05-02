@@ -1,26 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { COOKIE_NAMES } from '@/lib/constants';
-import { userServerApi } from '@/lib/api/server';
+import { API_BASE_URL, API_PATHS } from '@/lib/constants';
+import { withAuth } from '@/lib/server/refresh';
+import type { ApiResponse, UserProfile } from '@/lib/api/types';
 
 export async function PATCH(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(COOKIE_NAMES.ACCESS_TOKEN)?.value;
-    if (!token) {
+    const body = await req.json();
+
+    const result = await withAuth<ApiResponse<UserProfile>>((token) =>
+      fetch(`${API_BASE_URL}${API_PATHS.USERS_ME}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      }),
+    );
+
+    if (!result) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await req.json();
-    const json = await userServerApi.updateProfile(token, body);
-
-    if (!json.success) {
+    if (!result.json.success) {
       return NextResponse.json(
-        { success: false, message: json.message ?? 'Profile update failed' },
-        { status: 400 },
+        { success: false, message: result.json.message ?? 'Profile update failed' },
+        { status: result.status || 400 },
       );
     }
-    return NextResponse.json({ success: true, user: json.data });
+    return NextResponse.json({ success: true, user: result.json.data });
   } catch {
     return NextResponse.json(
       { success: false, message: 'Network error. Please try again.' },

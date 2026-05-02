@@ -1,30 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { COOKIE_NAMES, API_BASE_URL, API_PATHS } from '@/lib/constants';
+import { API_BASE_URL, API_PATHS } from '@/lib/constants';
+import { withAuth } from '@/lib/server/refresh';
+import type { ApiResponse, UserProfile } from '@/lib/api/types';
 
 export async function PATCH(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(COOKIE_NAMES.ACCESS_TOKEN)?.value;
-    if (!token) {
+    const formData = await req.formData();
+
+    const result = await withAuth<ApiResponse<UserProfile>>((token) =>
+      fetch(`${API_BASE_URL}${API_PATHS.USERS_ME_AVATAR}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      }),
+    );
+
+    if (!result) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    const formData = await req.formData();
-    const upstream = await fetch(`${API_BASE_URL}${API_PATHS.USERS_ME_AVATAR}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    const json = await upstream.json();
-
-    if (!json.success) {
+    if (!result.json.success) {
       return NextResponse.json(
-        { success: false, message: json.message ?? 'Avatar upload failed' },
-        { status: upstream.status },
+        { success: false, message: result.json.message ?? 'Avatar upload failed' },
+        { status: result.status || 400 },
       );
     }
-    return NextResponse.json({ success: true, avatarUrl: json.data?.avatarUrl });
+    return NextResponse.json({ success: true, avatarUrl: result.json.data?.avatarUrl });
   } catch {
     return NextResponse.json(
       { success: false, message: 'Network error. Please try again.' },

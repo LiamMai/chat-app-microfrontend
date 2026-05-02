@@ -1,6 +1,7 @@
 import './global.css';
 import { Dancing_Script } from 'next/font/google';
 import { NavigationBridge } from '@/components/NavigationBridge';
+import { QueryProvider } from '@/components/QueryProvider';
 
 const dancingScript = Dancing_Script({
   subsets: ['latin'],
@@ -21,8 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={dancingScript.variable}>
-        <NavigationBridge />
-        {children}
+        <QueryProvider>
+          <NavigationBridge />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

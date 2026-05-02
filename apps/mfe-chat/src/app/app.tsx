@@ -1,9 +1,11 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useIsMobile } from './hooks/use-is-mobile';
 import { useAppState } from './hooks/use-app-state';
 import { MessagesView } from './components/MessagesView';
 import { ChatView } from './components/ChatView';
+import { queryClient } from './lib/query-client';
 
-export function App() {
+function AppShell() {
   const isMobile = useIsMobile();
   const { state, selectedConversation, selectConversation, goBack } = useAppState();
 
@@ -38,6 +40,14 @@ export function App() {
         <ChatView conversation={selectedConversation} onBack={goBack} isMobile={false} />
       </div>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppShell />
+    </QueryClientProvider>
   );
 }
 
