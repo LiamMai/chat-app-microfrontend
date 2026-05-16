@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 
-export function TypingIndicator() {
+interface TypingIndicatorProps {
+  /** When non-empty, the indicator renders. Empty/undefined = nothing shown. */
+  label: string;
+}
+
+export function TypingIndicator({ label }: TypingIndicatorProps) {
   const [dots, setDots] = useState(0);
 
   useEffect(() => {
@@ -9,6 +14,8 @@ export function TypingIndicator() {
     }, 500);
     return () => clearInterval(interval);
   }, []);
+
+  if (!label) return null;
 
   return (
     <div
@@ -19,7 +26,6 @@ export function TypingIndicator() {
         padding: '6px 0',
       }}
     >
-      {/* Bouncing dots bubble */}
       <div
         style={{
           background: '#1e2a3d',
@@ -44,7 +50,7 @@ export function TypingIndicator() {
           />
         ))}
       </div>
-      <span style={{ color: '#8b9dc3', fontSize: 12 }}>Elena is typing...</span>
+      <span style={{ color: '#8b9dc3', fontSize: 12 }}>{label}</span>
     </div>
   );
 }

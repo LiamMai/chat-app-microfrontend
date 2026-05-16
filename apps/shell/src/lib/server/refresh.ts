@@ -44,9 +44,11 @@ export async function withAuth<T = unknown>(
   fetcher: (token: string) => Promise<Response>,
 ): Promise<UpstreamResult<T> | null> {
   let token = await getAccessTokenOrRefresh();
+  console.log("🚀 ~ withAuth ~ token:", token)
   if (!token) return null;
 
   let upstream = await fetcher(token);
+  console.log("🚀 ~ withAuth ~ upstream:", upstream)
   if (upstream.status === 401) {
     const refreshed = await refreshAccessToken();
     if (!refreshed) return null;

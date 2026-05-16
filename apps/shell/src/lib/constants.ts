@@ -9,6 +9,7 @@ export const API_PATHS = {
   AUTH_LOGOUT:     '/auth/logout',
   USERS_ME:        '/users/me',
   USERS_ME_AVATAR: '/users/me/avatar',
+  CHAT_ROOMS:      '/chat/rooms',
 } as const;
 
 /** Next.js BFF route paths (used by client-side pages) */
@@ -17,9 +18,15 @@ export const SHELL_API_PATHS = {
   AUTH_REGISTER:   '/api/auth/register',
   AUTH_REFRESH:    '/api/auth/refresh',
   AUTH_LOGOUT:     '/api/auth/logout',
+  AUTH_WS_TOKEN:   '/api/auth/ws-token',
   USERS_ME:        '/api/users/me',
   USERS_ME_AVATAR: '/api/users/me/avatar',
+  CHAT_ROOMS:      '/api/chat/rooms',
 } as const;
+
+/** Backend WebSocket origin (browser connects directly). Falls back to API origin. */
+export const WS_BASE_URL =
+  process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:3000';
 
 /** App route paths — single source of truth for all cross-app navigation */
 export const ROUTES = {

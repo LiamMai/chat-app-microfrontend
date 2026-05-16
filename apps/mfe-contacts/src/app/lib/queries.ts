@@ -3,15 +3,17 @@ import {
   injectMutation,
   injectQueryClient,
 } from '@tanstack/angular-query-experimental';
-import { contactsApi } from './api';
+import { inject } from '@angular/core';
+import { ContactsApi } from './api';
 
 export const queryKeys = {
-  contacts:        ['contacts'] as const,
+  contacts: ['contacts'] as const,
   contactRequests: ['contacts', 'requests'] as const,
   contactSearch: (query: string) => ['contacts', 'search', query] as const,
 } as const;
 
 export function injectContactsQuery() {
+  const contactsApi = inject(ContactsApi);
   return injectQuery(() => ({
     queryKey: queryKeys.contacts,
     queryFn: () => contactsApi.list(),
@@ -19,6 +21,7 @@ export function injectContactsQuery() {
 }
 
 export function injectContactRequestsQuery() {
+  const contactsApi = inject(ContactsApi);
   return injectQuery(() => ({
     queryKey: queryKeys.contactRequests,
     queryFn: () => contactsApi.listRequests(),
@@ -26,6 +29,7 @@ export function injectContactRequestsQuery() {
 }
 
 export function injectContactSearchQuery(query: () => string) {
+  const contactsApi = inject(ContactsApi);
   return injectQuery(() => {
     const q = query();
     return {
@@ -37,14 +41,17 @@ export function injectContactSearchQuery(query: () => string) {
 }
 
 export function injectSendRequestMutation() {
+  const contactsApi = inject(ContactsApi);
   const qc = injectQueryClient();
   return injectMutation(() => ({
     mutationFn: (toUserId: string) => contactsApi.sendRequest(toUserId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.contactRequests }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: queryKeys.contactRequests }),
   }));
 }
 
 export function injectAcceptRequestMutation() {
+  const contactsApi = inject(ContactsApi);
   const qc = injectQueryClient();
   return injectMutation(() => ({
     mutationFn: (requestId: string) => contactsApi.acceptRequest(requestId),
@@ -56,9 +63,11 @@ export function injectAcceptRequestMutation() {
 }
 
 export function injectRejectRequestMutation() {
+  const contactsApi = inject(ContactsApi);
   const qc = injectQueryClient();
   return injectMutation(() => ({
     mutationFn: (requestId: string) => contactsApi.rejectRequest(requestId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.contactRequests }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: queryKeys.contactRequests }),
   }));
 }

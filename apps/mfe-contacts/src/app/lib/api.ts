@@ -1,10 +1,14 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+
 /** Shell BFF base — Angular MFE calls shell-relative paths so cookies attach. */
 const API_BASE = '/api';
 
 export const SHELL_API_PATHS = {
-  CONTACTS:           `${API_BASE}/contacts`,
-  CONTACT_REQUESTS:   `${API_BASE}/contacts/requests`,
-  CONTACT_SEARCH:     `${API_BASE}/contacts/search`,
+  CONTACTS: `${API_BASE}/contacts`,
+  CONTACT_REQUESTS: `${API_BASE}/contacts/requests`,
+  CONTACT_SEARCH: `${API_BASE}/contacts/search`,
 } as const;
 
 export interface Contact {
@@ -22,35 +26,51 @@ export interface ContactRequest {
   createdAt: string;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    ...init,
-  });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-  return res.json() as Promise<T>;
+@Injectable({ providedIn: 'root' })
+export class ContactsApi {
+  private readonly http = inject(HttpClient);
+
+  list(): Promise<Contact[]> {
+    return firstValueFrom(this.http.get<Contact[]>(SHELL_API_PATHS.CONTACTS));
+  }
+
+  listRequests(): Promise<ContactRequest[]> {
+    return firstValueFrom(
+      this.http.get<ContactRequest[]>(SHELL_API_PATHS.CONTACT_REQUESTS),
+    );
+  }
+
+  search(query: string): Promise<Contact[]> {
+    return firstValueFrom(
+      this.http.get<Contact[]>(SHELL_API_PATHS.CONTACT_SEARCH, {
+        params: { q: query },
+      }),
+    );
+  }
+
+  sendRequest(toUserId: string): Promise<ContactRequest> {
+    return firstValueFrom(
+      this.http.post<ContactRequest>(SHELL_API_PATHS.CONTACT_REQUESTS, {
+        toUserId,
+      }),
+    );
+  }
+
+  acceptRequest(requestId: string): Promise<ContactRequest> {
+    return firstValueFrom(
+      this.http.post<ContactRequest>(
+        `${SHELL_API_PATHS.CONTACT_REQUESTS}/${requestId}/accept`,
+        {},
+      ),
+    );
+  }
+
+  rejectRequest(requestId: string): Promise<ContactRequest> {
+    return firstValueFrom(
+      this.http.post<ContactRequest>(
+        `${SHELL_API_PATHS.CONTACT_REQUESTS}/${requestId}/reject`,
+        {},
+      ),
+    );
+  }
 }
-
-export const contactsApi = {
-  list:         () => request<Contact[]>(SHELL_API_PATHS.CONTACTS),
-  listRequests: () => request<ContactRequest[]>(SHELL_API_PATHS.CONTACT_REQUESTS),
-  search:       (query: string) =>
-    request<Contact[]>(`${SHELL_API_PATHS.CONTACT_SEARCH}?q=${encodeURIComponent(query)}`),
-
-  sendRequest: (toUserId: string) =>
-    request<ContactRequest>(SHELL_API_PATHS.CONTACT_REQUESTS, {
-      method: 'POST',
-      body: JSON.stringify({ toUserId }),
-    }),
-
-  acceptRequest: (requestId: string) =>
-    request<ContactRequest>(`${SHELL_API_PATHS.CONTACT_REQUESTS}/${requestId}/accept`, {
-      method: 'POST',
-    }),
-
-  rejectRequest: (requestId: string) =>
-    request<ContactRequest>(`${SHELL_API_PATHS.CONTACT_REQUESTS}/${requestId}/reject`, {
-      method: 'POST',
-    }),
-};

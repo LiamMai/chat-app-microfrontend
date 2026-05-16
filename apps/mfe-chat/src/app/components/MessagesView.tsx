@@ -6,18 +6,27 @@ import {
   IconPencil,
 } from '@tabler/icons-react';
 import type { Conversation } from '../data/mock';
-import { conversations } from '../data/mock';
 import { Avatar } from './Avatar';
 import { ConversationItem } from './ConversationItem';
 import { StoriesRow } from './StoriesRow';
 
 interface MessagesViewProps {
+  conversations: Conversation[];
+  isLoading: boolean;
   onSelectConversation: (conversation: Conversation) => void;
   selectedConversationId: string;
   isMobile: boolean;
+  totalUnread?: number;
 }
 
-export function MessagesView({ onSelectConversation, selectedConversationId, isMobile }: MessagesViewProps) {
+export function MessagesView({
+  conversations,
+  isLoading,
+  onSelectConversation,
+  selectedConversationId,
+  isMobile,
+  totalUnread = 0,
+}: MessagesViewProps) {
   const [search, setSearch] = useState('');
 
   const filtered = conversations.filter(
@@ -25,7 +34,7 @@ export function MessagesView({ onSelectConversation, selectedConversationId, isM
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.lastMessage.toLowerCase().includes(search.toLowerCase()),
   );
-
+  
   if (!isMobile) {
     // Desktop chat-list panel
     return (
@@ -77,6 +86,8 @@ export function MessagesView({ onSelectConversation, selectedConversationId, isM
 
         {/* List */}
         <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+          {isLoading && <ListPlaceholder text="Loading conversations…" />}
+          {!isLoading && filtered.length === 0 && <ListPlaceholder text="No conversations yet" />}
           {filtered.map((conv) => (
             <ConversationItem
               key={conv.id}
@@ -120,7 +131,21 @@ export function MessagesView({ onSelectConversation, selectedConversationId, isM
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <IconButton icon={<IconSearch size={20} color="#8b9dc3" />} />
-          <IconButton icon={<IconBell size={20} color="#8b9dc3" />} />
+          <div style={{ position: 'relative' }}>
+            <IconButton icon={<IconBell size={20} color={totalUnread > 0 ? '#4d7af6' : '#8b9dc3'} />} />
+            {totalUnread > 0 && (
+              <span style={{
+                position: 'absolute', top: 2, right: 2,
+                background: '#ef4444', color: '#fff',
+                borderRadius: '50%', width: 16, height: 16,
+                fontSize: 10, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                pointerEvents: 'none',
+              }}>
+                {totalUnread > 9 ? '9+' : totalUnread}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -143,6 +168,8 @@ export function MessagesView({ onSelectConversation, selectedConversationId, isM
             Recent Messages
           </span>
         </div>
+        {isLoading && <ListPlaceholder text="Loading conversations…" />}
+        {!isLoading && filtered.length === 0 && <ListPlaceholder text="No conversations yet" />}
         {filtered.map((conv) => (
           <ConversationItem
             key={conv.id}
@@ -213,6 +240,14 @@ function SearchBar({
           minWidth: 0,
         }}
       />
+    </div>
+  );
+}
+
+function ListPlaceholder({ text }: { text: string }) {
+  return (
+    <div style={{ padding: '24px 16px', textAlign: 'center', color: '#8b9dc3', fontSize: 13 }}>
+      {text}
     </div>
   );
 }

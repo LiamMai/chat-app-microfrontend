@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   IconArrowLeft,
   IconVideo,
@@ -10,18 +10,73 @@ import {
   IconChecks,
 } from '@tabler/icons-react';
 import type { Conversation } from '../data/mock';
-import { messages } from '../data/mock';
 import { Avatar } from './Avatar';
 import { TypingIndicator } from './TypingIndicator';
+import { useMessagesQuery, useSendMessageMutation } from '../lib/queries';
+import { messageToUiMessage } from '../lib/adapters';
 
 interface ChatViewProps {
   conversation: Conversation;
+  roomId: string;
+  currentUserId: string | null;
+  sendViaSocket: (content: string) => boolean;
+  typingUsers: string[];
+  notifyLocalTyping: () => void;
+  stopLocalTyping: () => void;
   onBack: () => void;
   isMobile: boolean;
 }
 
-export function ChatView({ conversation, onBack, isMobile }: ChatViewProps) {
+function buildTypingLabel(typingUsers: string[]): string {
+  if (typingUsers.length === 0) return '';
+  if (typingUsers.length === 1) return `${typingUsers[0]} is typing...`;
+  if (typingUsers.length === 2) {
+    return `${typingUsers[0]} and ${typingUsers[1]} are typing...`;
+  }
+
+  const [first, second, ...rest] = typingUsers;
+  return `${first}, ${second}, and ${rest.length} others are typing...`;
+}
+
+export function ChatView({
+  conversation,
+  roomId,
+  currentUserId,
+  sendViaSocket,
+  typingUsers,
+  notifyLocalTyping,
+  stopLocalTyping,
+  onBack,
+  isMobile,
+}: ChatViewProps) {
   const [inputValue, setInputValue] = useState('');
+  const { data: rawMessages = [], isLoading } = useMessagesQuery(roomId);
+  const sendMutation = useSendMessageMutation(roomId);
+  
+  const messages = rawMessages.map((m) => messageToUiMessage(m, currentUserId));
+  const typingLabel = buildTypingLabel(typingUsers);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages.length, typingLabel]);
+
+  function submit() {
+    const content = inputValue.trim();
+    if (!content) return;
+    setInputValue('');
+    stopLocalTyping();
+    if (!sendViaSocket(content)) {
+      sendMutation.mutate(content);
+    }
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const next = e.target.value;
+    setInputValue(next);
+    if (next.length === 0) stopLocalTyping();
+    else notifyLocalTyping();
+  }
 
   return (
     <div
@@ -97,6 +152,7 @@ export function ChatView({ conversation, onBack, isMobile }: ChatViewProps) {
 
       {/* Messages area */}
       <div
+        ref={scrollRef}
         style={{
           flex: 1,
           overflowY: 'auto',
@@ -109,6 +165,18 @@ export function ChatView({ conversation, onBack, isMobile }: ChatViewProps) {
       >
         {/* Date separator */}
         <DateSeparator label="Today" />
+
+        {isLoading && (
+          <div style={{ color: '#8b9dc3', fontSize: 13, textAlign: 'center', padding: 12 }}>
+            Loading messages…
+          </div>
+        )}
+
+        {!isLoading && messages.length === 0 && (
+          <div style={{ color: '#8b9dc3', fontSize: 13, textAlign: 'center', padding: 12 }}>
+            No messages yet — say hi
+          </div>
+        )}
 
         {/* Messages */}
         {messages.map((msg) => (
@@ -183,8 +251,8 @@ export function ChatView({ conversation, onBack, isMobile }: ChatViewProps) {
           </div>
         ))}
 
-        {/* Typing indicator */}
-        <TypingIndicator />
+        {/* Typing indicator — driven by socket events, only renders when label non-empty */}
+        <TypingIndicator label={typingLabel} />
       </div>
 
       {/* Message input */}
@@ -244,7 +312,13 @@ export function ChatView({ conversation, onBack, isMobile }: ChatViewProps) {
             type="text"
             placeholder="Type a message..."
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInputChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
             style={{
               background: 'transparent',
               border: 'none',
@@ -257,18 +331,21 @@ export function ChatView({ conversation, onBack, isMobile }: ChatViewProps) {
         </div>
 
         <button
+          onClick={submit}
+          disabled={!inputValue.trim() || sendMutation.isPending}
           style={{
             width: 40,
             height: 40,
             borderRadius: '50%',
             background: '#4d7af6',
             border: 'none',
-            cursor: 'pointer',
+            cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
             boxShadow: '0 2px 12px rgba(77,122,246,0.35)',
+            opacity: inputValue.trim() ? 1 : 0.5,
           }}
         >
           <IconSend size={18} color="#fff" />

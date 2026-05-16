@@ -4,7 +4,7 @@ import {
   IconUserPlus,
   IconSettings,
 } from '@tabler/icons-react';
-import type { ActiveTab } from '../hooks/use-app-state';
+import type { ActiveTab } from '../hooks/useAppState';
 import { navigateTo } from '../utils/navigate';
 
 interface MobileBottomNavProps {

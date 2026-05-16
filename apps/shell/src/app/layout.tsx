@@ -1,7 +1,9 @@
 import './global.css';
+import Script from 'next/script';
 import { Dancing_Script } from 'next/font/google';
 import { NavigationBridge } from '@/components/NavigationBridge';
 import { QueryProvider } from '@/components/QueryProvider';
+import { WS_BASE_URL } from '@/lib/constants';
 
 const dancingScript = Dancing_Script({
   subsets: ['latin'],
@@ -20,8 +22,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={dancingScript.variable}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={dancingScript.variable} suppressHydrationWarning>
+        <Script
+          id="mfe-runtime-config"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `window.__WS_URL__ = ${JSON.stringify(WS_BASE_URL)};`,
+          }}
+        />
         <QueryProvider>
           <NavigationBridge />
           {children}
