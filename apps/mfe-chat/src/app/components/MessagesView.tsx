@@ -6,6 +6,7 @@ import {
   IconPencil,
 } from '@tabler/icons-react';
 import type { Conversation } from '../data/mock';
+import type { CurrentUser } from '../lib/types';
 import { Avatar } from './Avatar';
 import { ConversationItem } from './ConversationItem';
 import { StoriesRow } from './StoriesRow';
@@ -17,6 +18,8 @@ interface MessagesViewProps {
   selectedConversationId: string;
   isMobile: boolean;
   totalUnread?: number;
+  typingLabels?: Record<string, string>;
+  currentUser?: CurrentUser | null;
 }
 
 export function MessagesView({
@@ -26,6 +29,8 @@ export function MessagesView({
   selectedConversationId,
   isMobile,
   totalUnread = 0,
+  typingLabels = {},
+  currentUser = null,
 }: MessagesViewProps) {
   const [search, setSearch] = useState('');
 
@@ -95,6 +100,7 @@ export function MessagesView({
               onClick={onSelectConversation}
               isSelected={conv.id === selectedConversationId}
               compact
+              typingLabel={typingLabels[conv.id]}
             />
           ))}
         </div>
@@ -124,9 +130,14 @@ export function MessagesView({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar initials="ME" bg="#4d7af6" size={32} />
+          <Avatar
+            initials={currentUser ? `${currentUser.firstName[0]}${currentUser.lastName?.[0] ?? ''}`.toUpperCase() : 'ME'}
+            bg="#4d7af6"
+            size={32}
+            src={currentUser?.avatarUrl}
+          />
           <span style={{ color: '#ffffff', fontWeight: 700, fontSize: 17 }}>
-            FocusChat
+            {currentUser ? `${currentUser.firstName}${currentUser.lastName ? ` ${currentUser.lastName}` : ''}` : 'FocusChat'}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -176,6 +187,7 @@ export function MessagesView({
             conversation={conv}
             onClick={onSelectConversation}
             isSelected={conv.id === selectedConversationId}
+            typingLabel={typingLabels[conv.id]}
           />
         ))}
       </div>

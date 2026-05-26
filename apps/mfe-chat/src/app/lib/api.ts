@@ -1,9 +1,10 @@
-import type { ApiEnvelope, ChatMessage, ChatRoom } from './types';
+import type { ApiEnvelope, ChatMessage, ChatRoom, CurrentUser } from './types';
 
 const SHELL_API = {
   AUTH_REFRESH: '/api/auth/refresh',
   ROOMS: '/api/chat/rooms',
   WS_TOKEN: '/api/auth/ws-token',
+  USERS_ME: '/api/users/me',
 } as const;
 
 const LOGIN_PATH = '/login';
@@ -98,4 +99,7 @@ export const chatApi = {
 
   fetchWsToken: () =>
     get<{ success: boolean; token: string; userId: string | null }>(SHELL_API.WS_TOKEN),
+
+  fetchMe: () =>
+    get<{ success: boolean; user: CurrentUser | null }>(SHELL_API.USERS_ME, true),
 };

@@ -3,6 +3,25 @@ import { API_BASE_URL, API_PATHS } from '@/lib/constants';
 import { withAuth } from '@/lib/server/refresh';
 import type { ApiResponse, UserProfile } from '@/lib/api/types';
 
+export async function GET() {
+  const result = await withAuth<ApiResponse<UserProfile>>((token) =>
+    fetch(`${API_BASE_URL}${API_PATHS.USERS_ME}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+
+  if (!result) {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  }
+  if (!result.json.success) {
+    return NextResponse.json(
+      { success: false, message: result.json.message ?? 'Failed to fetch profile' },
+      { status: result.status || 400 },
+    );
+  }
+  return NextResponse.json({ success: true, user: result.json.data });
+}
+
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();

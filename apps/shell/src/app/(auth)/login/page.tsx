@@ -121,7 +121,7 @@ const labelStyle: React.CSSProperties = {
 export default function LoginPage() {
   const router = useRouter();
 
-  const [form, setField] = useFormState({ email: '', password: '', showPassword: false });
+  const [form, setField] = useFormState({ email: 'seed-user-01@chat.dev', password: 'Seed@12345', showPassword: false });
   const { isLoading, error, setError, execute } = useAsyncAction();
 
   const canSubmit = form.email.trim().length > 0 && form.password.length > 0;

@@ -8,6 +8,7 @@ interface ConversationItemProps {
   onClick: (conversation: Conversation) => void;
   isSelected?: boolean;
   compact?: boolean;
+  typingLabel?: string;
 }
 
 export function ConversationItem({
@@ -15,6 +16,7 @@ export function ConversationItem({
   onClick,
   isSelected = false,
   compact = false,
+  typingLabel,
 }: ConversationItemProps) {
   const avatarSize = compact ? 42 : 48;
 
@@ -90,16 +92,30 @@ export function ConversationItem({
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{
-            color: isSelected ? '#a0b4d6' : '#8b9dc3',
-            fontSize: 12,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            flex: 1,
-          }}>
-            {conversation.lastMessage}
-          </span>
+          {typingLabel ? (
+            <span style={{
+              color: '#4d7af6',
+              fontSize: 12,
+              flex: 1,
+              fontStyle: 'italic',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {typingLabel}
+            </span>
+          ) : (
+            <span style={{
+              color: isSelected ? '#a0b4d6' : '#8b9dc3',
+              fontSize: 12,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+            }}>
+              {conversation.lastMessage}
+            </span>
+          )}
           <div style={{ marginLeft: 8, flexShrink: 0 }}>
             <StatusIcon statusIcon={conversation.statusIcon} unread={conversation.unread} />
           </div>

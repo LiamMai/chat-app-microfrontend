@@ -1,13 +1,31 @@
-export type RoomType = 'dm' | 'group';
+export enum RoomType {
+  DM = 'dm',
+  Group = 'group',
+}
+
+export interface ChatUser {
+  _id: string;
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  username?: string | null;
+  avatarUrl?: string | null;
+}
 
 export interface ChatRoom {
   _id: string;
   type: RoomType;
   name: string | null;
-  members: string[];
+  members: ChatUser[];
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  lastMessage?: {
+    content: string;
+    senderId: string;
+    createdAt: string;
+  } | null;
 }
 
 export type MessageType = 'text' | 'image' | 'file';
@@ -21,6 +39,15 @@ export interface ChatMessage {
   readBy: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CurrentUser {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+  email: string;
 }
 
 export interface ApiEnvelope<T> {

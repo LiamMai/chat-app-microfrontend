@@ -4,6 +4,7 @@ interface AvatarProps {
   size?: number;
   isOnline?: boolean;
   hasGradientRing?: boolean;
+  src?: string | null;
 }
 
 export function Avatar({
@@ -12,6 +13,7 @@ export function Avatar({
   size = 48,
   isOnline = false,
   hasGradientRing = false,
+  src,
 }: AvatarProps) {
   const fontSize = size <= 32 ? 11 : size <= 40 ? 13 : 15;
 
@@ -33,7 +35,7 @@ export function Avatar({
           width: size,
           height: size,
           borderRadius: '50%',
-          background: bg,
+          background: src ? 'transparent' : bg,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -45,9 +47,14 @@ export function Avatar({
           zIndex: 1,
           border: hasGradientRing ? '2px solid #131929' : 'none',
           flexShrink: 0,
+          overflow: 'hidden',
         }}
       >
-        {initials}
+        {src ? (
+          <img src={src} alt={initials} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          initials
+        )}
       </div>
       {isOnline && (
         <div

@@ -28,7 +28,7 @@ interface LegacyTypingEvent {
 
 interface SocketState {
   socket: Socket | null;
-  typingUserData: UserTypingData[];
+  typingPerRoom: Record<string, UserTypingData[]>;
   unreadCounts: Record<string, number>;
 }
 
@@ -65,19 +65,21 @@ function normalizeTypingEvent(
 export function useChatSocket(
   activeRoomId: string | null,
   currentUserId: string | null,
+  roomIds: string[] = [],
 ) {
   const qc = useQueryClient();
   const socketRef = useRef<Socket | null>(null);
   const joinedRoomRef = useRef<string | null>(null);
 
-  const [{ socket, typingUserData, unreadCounts }, setState] =
+  const [{ socket, typingPerRoom, unreadCounts }, setState] =
     useStableState<SocketState>({
       socket: null,
-      typingUserData: [],
+      typingPerRoom: {},
       unreadCounts: {},
     });
 
-  const typingMapRef = useRef<Map<string, number>>(new Map());
+  // outer key: roomId, inner key: userId, value: expiry timestamp
+  const typingMapRef = useRef<Map<string, Map<string, number>>>(new Map());
   const typingSweepRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Local outgoing-typing debounce
@@ -88,13 +90,20 @@ export function useChatSocket(
 
   const handleSetTypingUsers = useCallback((evt: UserTypingEvent) => {
     setState((prev) => {
-      const updated = new Map(prev.typingUserData.map((u) => [u.userId, u]));
+      const roomUsers = new Map(
+        (prev.typingPerRoom[evt.roomId] ?? []).map((u) => [u.userId, u]),
+      );
       if (evt.typing && evt.userName) {
-        updated.set(evt.userId, { userId: evt.userId, userName: evt.userName });
+        roomUsers.set(evt.userId, { userId: evt.userId, userName: evt.userName });
       } else {
-        updated.delete(evt.userId);
+        roomUsers.delete(evt.userId);
       }
-      return { typingUserData: Array.from(updated.values()) };
+      return {
+        typingPerRoom: {
+          ...prev.typingPerRoom,
+          [evt.roomId]: Array.from(roomUsers.values()),
+        },
+      };
     });
   }, [setState]);
 
@@ -128,17 +137,16 @@ export function useChatSocket(
         };
 
         const onUserTyping = (evt: UserTypingEvent) => {
-          // Ignore self and other rooms
           if (evt.userId === currentUserId) return;
-          if (joinedRoomRef.current !== evt.roomId) return;
 
+          if (!typingMapRef.current.has(evt.roomId)) {
+            typingMapRef.current.set(evt.roomId, new Map());
+          }
+          const roomMap = typingMapRef.current.get(evt.roomId)!;
           if (evt.typing) {
-            typingMapRef.current.set(
-              evt.userId,
-              Date.now() + SERVER_TYPING_TTL_MS,
-            );
+            roomMap.set(evt.userId, Date.now() + SERVER_TYPING_TTL_MS);
           } else {
-            typingMapRef.current.delete(evt.userId);
+            roomMap.delete(evt.userId);
           }
           handleSetTypingUsers(evt);
         };
@@ -195,51 +203,61 @@ export function useChatSocket(
   useEffect(() => {
     typingSweepRef.current = setInterval(() => {
       const now = Date.now();
-      let changed = false;
-      for (const [uid, expiresAt] of typingMapRef.current) {
-        if (expiresAt <= now) {
-          typingMapRef.current.delete(uid);
-          changed = true;
+      const expiredByRoom: Record<string, string[]> = {};
+
+      for (const [roomId, roomMap] of typingMapRef.current) {
+        for (const [uid, expiresAt] of roomMap) {
+          if (expiresAt <= now) {
+            roomMap.delete(uid);
+            (expiredByRoom[roomId] ??= []).push(uid);
+          }
         }
       }
-      if (changed) setState((prev) => {
-        const updated = new Map(prev.typingUserData.map((u) => [u.userId, u]));
-        for (const [uid] of typingMapRef.current) {
-          updated.delete(uid);
-        }
-        return { typingUserData: Array.from(updated.values()) };
-      });
+
+      if (Object.keys(expiredByRoom).length > 0) {
+        setState((prev) => {
+          const updated = { ...prev.typingPerRoom };
+          for (const [roomId, expiredIds] of Object.entries(expiredByRoom)) {
+            updated[roomId] = (updated[roomId] ?? []).filter(
+              (u) => !expiredIds.includes(u.userId),
+            );
+          }
+          return { typingPerRoom: updated };
+        });
+      }
     }, 1000);
     return () => {
       if (typingSweepRef.current) clearInterval(typingSweepRef.current);
     };
   }, []);
 
-  // ── Join / leave room as selection changes ────────────────────────────────
+  // ── Join all rooms so typing events arrive regardless of active room ─────
+  const roomIdsKey = roomIds.join(',');
+  useEffect(() => {
+    const sock = socket;
+    if (!sock || roomIds.length === 0) return;
+    roomIds.forEach((id) => sock.emit('join_room', { roomId: id }));
+    return () => {
+      roomIds.forEach((id) => sock.emit('leave_room', { roomId: id }));
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, roomIdsKey]);
+
+  // ── Track active room + clear unread when entering ────────────────────────
   useEffect(() => {
     const sock = socket;
     if (!sock || !activeRoomId) return;
 
-    if (joinedRoomRef.current && joinedRoomRef.current !== activeRoomId) {
-      sock.emit('leave_room', { roomId: joinedRoomRef.current });
-    }
-    sock.emit('join_room', { roomId: activeRoomId });
     joinedRoomRef.current = activeRoomId;
 
-    // Reset typing state and clear unread for the room being entered
-    typingMapRef.current.clear();
     setState((prev) => {
-      const next: Partial<SocketState> = { typingUserData: [] };
-      if (prev.unreadCounts[activeRoomId]) {
-        const counts = { ...prev.unreadCounts };
-        delete counts[activeRoomId];
-        next.unreadCounts = counts;
-      }
-      return next;
+      if (!prev.unreadCounts[activeRoomId]) return {};
+      const counts = { ...prev.unreadCounts };
+      delete counts[activeRoomId];
+      return { unreadCounts: counts };
     });
 
     return () => {
-      sock.emit('leave_room', { roomId: activeRoomId });
       // Force-clear our outgoing typing state on the way out
       if (localTypingActiveRef.current) {
         emitTypingState(sock, activeRoomId, false);
@@ -310,7 +328,7 @@ export function useChatSocket(
 
   return {
     sendViaSocket,
-    typingUserData,
+    typingPerRoom,
     notifyLocalTyping,
     stopLocalTyping,
     unreadCounts,

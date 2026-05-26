@@ -251,9 +251,18 @@ export function ChatView({
           </div>
         ))}
 
-        {/* Typing indicator — driven by socket events, only renders when label non-empty */}
-        <TypingIndicator label={typingLabel} />
       </div>
+
+      {/* Typing indicator — fixed between messages and input, always visible when active */}
+      {typingLabel && (
+        <div style={{
+          padding: '4px 16px 0',
+          background: '#0a0f1e',
+          flexShrink: 0,
+        }}>
+          <TypingIndicator label={typingLabel} />
+        </div>
+      )}
 
       {/* Message input */}
       <div
