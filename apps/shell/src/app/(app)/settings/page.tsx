@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useCurrentUser } from '@/lib/api/queries';
 
 /* ─── Types ─── */
 interface Session { device: string; location: string; current?: boolean; lastSeen?: string }
@@ -207,6 +208,10 @@ function MenuRow({ icon, label, sub, rightEl }: { icon: React.ReactNode; label: 
 
 /* ─── Page ─── */
 export default function SettingsPage() {
+  const { data: user } = useCurrentUser();
+  const displayName = user ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : '';
+  const avatarInitial = user?.firstName?.[0]?.toUpperCase() ?? '?';
+
   const [toggles, setToggles] = useState<Toggle[]>([
     { label: 'Dark Mode Architecture', sub: '', on: true },
     { label: 'Desktop Notifications', sub: '', on: true },
@@ -250,7 +255,7 @@ export default function SettingsPage() {
                     fontWeight: 700,
                     color: '#fff',
                     margin: '0 auto',
-                  }}>A</div>
+                  }}>{avatarInitial}</div>
                   <button style={{
                     position: 'absolute',
                     bottom: 0,
@@ -269,13 +274,13 @@ export default function SettingsPage() {
                     <EditIcon />
                   </button>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Alex Rivers</div>
+                <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{displayName || '…'}</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#4d7af6', fontSize: 13, marginBottom: 8 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="#4d7af6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
                   Deep Focus Mode Active
                 </div>
                 <div style={{ fontSize: 13, color: '#8b9dc3', lineHeight: 1.5 }}>
-                  Product Designer &amp; Digital Minimalist.<br />Building the future of focused communication.
+                  {user?.bio ?? ''}
                 </div>
               </div>
 
@@ -294,7 +299,7 @@ export default function SettingsPage() {
                       fontSize: 32,
                       fontWeight: 700,
                       color: '#fff',
-                    }}>A</div>
+                    }}>{avatarInitial}</div>
                     <button style={{
                       position: 'absolute',
                       bottom: -8,
@@ -314,9 +319,9 @@ export default function SettingsPage() {
                     </button>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 6 }}>Alex Rivera</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 6 }}>{displayName || '…'}</div>
                     <div style={{ fontSize: 14, color: '#8b9dc3', lineHeight: 1.6, marginBottom: 12 }}>
-                      Senior Product Designer focused on creating seamless communication experiences. Passionate about dark UI and glassmorphism.
+                      {user?.bio ?? ''}
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {['Product Design', 'Remote', 'Coffee Enthusiast'].map((tag) => (

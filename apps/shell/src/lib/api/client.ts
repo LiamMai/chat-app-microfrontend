@@ -79,6 +79,9 @@ export const authApi = {
 };
 
 export const userApi = {
+  getMe: () =>
+    authedFetch(SHELL_API_PATHS.USERS_ME).then((r) => r.json() as Promise<UserRouteResponse>),
+
   updateProfile: (data: { firstName?: string; username?: string; bio?: string }) =>
     authedPatch<UserRouteResponse>(SHELL_API_PATHS.USERS_ME, data),
 

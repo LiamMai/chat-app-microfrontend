@@ -9,6 +9,7 @@ import {
   IconSettings,
 } from '@tabler/icons-react';
 import { ROUTES } from '@/lib/constants';
+import { useCurrentUser } from '@/lib/api/queries';
 
 const NAV_ITEMS = [
   { icon: IconMessages,  label: 'Messages',  path: ROUTES.MESSAGES,          exact: true },
@@ -31,6 +32,11 @@ function isActive(pathname: string, path: string, exact: boolean): boolean {
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: user } = useCurrentUser();
+  const displayName = user ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : '';
+  const initials = user
+    ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
+    : '?';
 
   return (
     <aside style={{
@@ -108,17 +114,25 @@ export function AppSidebar() {
         gap: 10,
         border: '1px solid rgba(255,255,255,0.08)',
       }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: '50%',
-          background: '#4d7af6', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', color: '#fff', fontWeight: 700,
-          fontSize: 12, flexShrink: 0,
-        }}>
-          AR
-        </div>
+        {user?.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={displayName}
+            style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+          />
+        ) : (
+          <div style={{
+            width: 34, height: 34, borderRadius: '50%',
+            background: '#4d7af6', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: '#fff', fontWeight: 700,
+            fontSize: 12, flexShrink: 0,
+          }}>
+            {initials}
+          </div>
+        )}
         <div style={{ minWidth: 0 }}>
           <div style={{ color: '#ffffff', fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Alex Rivera
+            {displayName || '…'}
           </div>
           <div style={{ color: '#4d7af6', fontSize: 11 }}>Pro Plan</div>
         </div>

@@ -18,7 +18,8 @@
       "mfe_contacts/Routes": [
         "apps/mfe-contacts/src/app/remote-entry/entry.routes.ts"
       ],
-      "mfe_chat/Module": ["apps/mfe-chat/src/remote-entry.ts"]
+      "mfe_chat/Module": ["apps/mfe-chat/src/remote-entry.ts"],
+      "@shared/hooks": ["libs/hooks/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
