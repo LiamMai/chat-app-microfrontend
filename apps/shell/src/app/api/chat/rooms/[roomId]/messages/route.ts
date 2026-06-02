@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { API_BASE_URL, API_PATHS } from '@/lib/constants';
 import { withAuth } from '@/lib/server/refresh';
 import type { ApiResponse } from '@/lib/api/types';
-import type { ChatMessage } from '@/lib/api/chat-types';
+import type { ChatMessage } from '@/lib/api/chatTypes';
 
 interface RouteContext {
   params: Promise<{ roomId: string }>;

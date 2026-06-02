@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/client';
-import { useAsyncAction } from '@/hooks/use-async-action';
-import { useFormState } from '@/hooks/use-form-state';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { useFormState } from '@/hooks/useFormState';
 
 /* ─── Icon components (all inline SVG, zero external deps) ─── */
 

@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { authApi } from '@/lib/api/client';
-import { useAsyncAction } from '@/hooks/use-async-action';
-import { useFormState } from '@/hooks/use-form-state';
+import { useLogin } from '@/lib/api/queries';
+import { useFormState } from '@/hooks/useFormState';
+import { useStableState } from '@shared/hooks';
 
 /* ─── Icon components (all inline SVG, zero external deps) ─── */
 
@@ -120,23 +120,31 @@ const labelStyle: React.CSSProperties = {
 /* ─── Page component ─── */
 export default function LoginPage() {
   const router = useRouter();
+  const loginMutation = useLogin();
 
   const [form, setField] = useFormState({ email: 'seed-user-01@chat.dev', password: 'Seed@12345', showPassword: false });
-  const { isLoading, error, setError, execute } = useAsyncAction();
+  const [{ error }, setStatus] = useStableState({ error: null as string | null });
 
+  const isLoading = loginMutation.isPending;
   const canSubmit = form.email.trim().length > 0 && form.password.length > 0;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    execute(async () => {
-      const json = await authApi.login(form.email, form.password);
-      if (json.success) {
-        router.push('/');
-      } else {
-        setError(json.message ?? 'Login failed. Please try again.');
-      }
-    });
+    setStatus({ error: null });
+    loginMutation.mutate(
+      { email: form.email, password: form.password },
+      {
+        onSuccess: (res) => {
+          if (res.success) {
+            router.push('/');
+          } else {
+            setStatus({ error: res.message ?? 'Login failed. Please try again.' });
+          }
+        },
+        onError: () => setStatus({ error: 'Login failed. Please try again.' }),
+      },
+    );
   }
 
   return (
