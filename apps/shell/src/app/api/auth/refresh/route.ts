@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { COOKIE_NAMES } from '@/lib/constants';
 import { authServerApi } from '@/lib/api/server';
-import { setAuthCookies, clearAuthCookies } from '@/lib/server/auth-cookies';
+import { setAuthCookies, clearAuthCookies } from '@/lib/server/authCookies';
 
 export async function POST() {
   try {

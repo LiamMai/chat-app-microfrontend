@@ -12,7 +12,14 @@ export interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
+  role: string;
   isActive: boolean;
+  username: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  coverUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthData {

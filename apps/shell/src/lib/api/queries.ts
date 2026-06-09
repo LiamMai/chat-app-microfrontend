@@ -1,12 +1,23 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi, userApi } from './client';
-import type { AuthRouteResponse, UserRouteResponse } from './types';
+import type { AuthRouteResponse, AuthUser, UserRouteResponse } from './types';
 
 export const queryKeys = {
   currentUser: ['user', 'me'] as const,
 } as const;
+
+export function useCurrentUser() {
+  return useQuery<AuthUser | null>({
+    queryKey: queryKeys.currentUser,
+    queryFn: async () => {
+      const res = await userApi.getMe();
+      return res.success && res.user ? (res.user as AuthUser) : null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 interface LoginVars {
   email: string;

@@ -58,6 +58,7 @@ export function roomToConversation(
   currentUserId: string | null,
   lastMessage?: string,
   unreadCount?: number,
+  lastActivityIso?: string,
 ): Conversation {
   const isGroup = room.type === RoomType.Group;
   const otherMember = (room.members as Array<ChatUser | string>).find((m) => memberId(m) !== currentUserId) ?? room.members[0];
@@ -65,13 +66,17 @@ export function roomToConversation(
     ? (room.name ?? 'Group')
     : userDisplayName(otherMember as ChatUser);
 
+  // Prefer the latest message time; fall back to room activity.
+  const timeIso =
+    lastActivityIso ?? room.lastMessage?.createdAt ?? room.updatedAt ?? room.createdAt;
+
   return {
     id: room._id,
     name: displayName,
     avatar: initials(displayName),
     avatarBg: pickColor(room._id),
     lastMessage: lastMessage ?? '',
-    time: formatTime(room.updatedAt ?? room.createdAt),
+    time: formatTime(timeIso),
     isGroup,
     isOnline: false,
     unread: unreadCount,

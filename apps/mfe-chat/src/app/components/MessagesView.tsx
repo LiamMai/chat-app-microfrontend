@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   IconSearch,
-  IconBell,
   IconFilter,
   IconPencil,
 } from '@tabler/icons-react';
@@ -9,6 +8,7 @@ import type { Conversation } from '../data/mock';
 import type { CurrentUser } from '../lib/types';
 import { Avatar } from './Avatar';
 import { ConversationItem } from './ConversationItem';
+import { NotificationBell } from './NotificationBell';
 import { StoriesRow } from './StoriesRow';
 
 interface MessagesViewProps {
@@ -17,9 +17,10 @@ interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
   selectedConversationId: string;
   isMobile: boolean;
-  totalUnread?: number;
   typingLabels?: Record<string, string>;
   currentUser?: CurrentUser | null;
+  notificationBadgeCount?: number;
+  onOpenNotifications?: () => void;
 }
 
 export function MessagesView({
@@ -28,9 +29,10 @@ export function MessagesView({
   onSelectConversation,
   selectedConversationId,
   isMobile,
-  totalUnread = 0,
   typingLabels = {},
   currentUser = null,
+  notificationBadgeCount = 0,
+  onOpenNotifications = () => undefined,
 }: MessagesViewProps) {
   const [search, setSearch] = useState('');
 
@@ -68,20 +70,27 @@ export function MessagesView({
           <span style={{ color: '#ffffff', fontWeight: 700, fontSize: 18 }}>
             Chats
           </span>
-          <button
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: 'none',
-              borderRadius: 8,
-              padding: 7,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <IconFilter size={16} color="#8b9dc3" />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <NotificationBell
+              badgeCount={notificationBadgeCount}
+              onOpen={onOpenNotifications}
+              iconSize={16}
+            />
+            <button
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: 'none',
+                borderRadius: 8,
+                padding: 7,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <IconFilter size={16} color="#8b9dc3" />
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -140,23 +149,13 @@ export function MessagesView({
             {currentUser ? `${currentUser.firstName}${currentUser.lastName ? ` ${currentUser.lastName}` : ''}` : 'FocusChat'}
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <IconButton icon={<IconSearch size={20} color="#8b9dc3" />} />
-          <div style={{ position: 'relative' }}>
-            <IconButton icon={<IconBell size={20} color={totalUnread > 0 ? '#4d7af6' : '#8b9dc3'} />} />
-            {totalUnread > 0 && (
-              <span style={{
-                position: 'absolute', top: 2, right: 2,
-                background: '#ef4444', color: '#fff',
-                borderRadius: '50%', width: 16, height: 16,
-                fontSize: 10, fontWeight: 700,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                pointerEvents: 'none',
-              }}>
-                {totalUnread > 9 ? '9+' : totalUnread}
-              </span>
-            )}
-          </div>
+          <NotificationBell
+            badgeCount={notificationBadgeCount}
+            onOpen={onOpenNotifications}
+            iconSize={20}
+          />
         </div>
       </div>
 

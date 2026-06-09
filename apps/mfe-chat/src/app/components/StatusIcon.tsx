@@ -15,18 +15,22 @@ export function StatusIcon({ statusIcon, unread }: StatusIconProps) {
     return (
       <span
         style={{
-          background: '#4d7af6',
-          color: '#fff',
-          borderRadius: 12,
-          fontSize: 11,
+          background: '#aac4f5',
+          color: '#13233f',
+          borderRadius: 999,
+          fontSize: 12,
           fontWeight: 700,
-          padding: '1px 7px',
-          minWidth: 20,
-          textAlign: 'center',
-          display: 'inline-block',
+          height: 22,
+          minWidth: 22,
+          padding: '0 6px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1,
+          flexShrink: 0,
         }}
       >
-        {unread}
+        {unread > 99 ? '99+' : unread}
       </span>
     );
   }

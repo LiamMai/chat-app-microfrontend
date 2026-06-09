@@ -3,8 +3,8 @@
 import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useFormState } from '@/hooks/use-form-state';
-import { useAsyncAction } from '@/hooks/use-async-action';
+import { useFormState } from '@/hooks/useFormState';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { userApi } from '@/lib/api/client';
 
 const TOTAL_STEPS = 3;

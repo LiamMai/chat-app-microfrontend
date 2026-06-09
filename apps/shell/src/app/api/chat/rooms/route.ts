@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { API_BASE_URL, API_PATHS } from '@/lib/constants';
 import { withAuth } from '@/lib/server/refresh';
 import type { ApiResponse } from '@/lib/api/types';
-import type { ChatRoom } from '@/lib/api/chat-types';
+import type { ChatRoom } from '@/lib/api/chatTypes';
 
 export async function GET(req: NextRequest) {
   const search = req.nextUrl.searchParams.toString();

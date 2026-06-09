@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { COOKIE_NAMES } from '@/lib/constants';
 import { authServerApi } from '@/lib/api/server';
-import { setAuthCookies, clearAuthCookies } from './auth-cookies';
+import { setAuthCookies, clearAuthCookies } from './authCookies';
 
 /**
  * Attempt to mint a fresh access token from the refresh_token cookie.

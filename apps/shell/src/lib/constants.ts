@@ -10,6 +10,7 @@ export const API_PATHS = {
   USERS_ME:        '/users/me',
   USERS_ME_AVATAR: '/users/me/avatar',
   CHAT_ROOMS:      '/chat/rooms',
+  FRIENDS_REQUESTS_IN: '/friends/requests/incoming',
 } as const;
 
 /** Next.js BFF route paths (used by client-side pages) */
@@ -22,6 +23,7 @@ export const SHELL_API_PATHS = {
   USERS_ME:        '/api/users/me',
   USERS_ME_AVATAR: '/api/users/me/avatar',
   CHAT_ROOMS:      '/api/chat/rooms',
+  FRIENDS_REQUESTS_IN: '/api/friends/requests/incoming',
 } as const;
 
 /** Backend WebSocket origin (browser connects directly). Falls back to API origin. */

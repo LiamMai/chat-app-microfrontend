@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { chatApi } from './api';
-import type { ChatMessage, ChatRoom, CurrentUser } from './types';
+import type { ChatMessage, ChatRoom, CurrentUser, IncomingFriendRequest } from './types';
 
 export const chatKeys = {
-  rooms:        ['chat', 'rooms'] as const,
-  messages:     (roomId: string) => ['chat', 'rooms', roomId, 'messages'] as const,
-  currentUser:  ['chat', 'current-user'] as const,
-  me:           ['chat', 'me'] as const,
+  rooms:           ['chat', 'rooms'] as const,
+  messages:        (roomId: string) => ['chat', 'rooms', roomId, 'messages'] as const,
+  currentUser:     ['chat', 'current-user'] as const,
+  me:              ['chat', 'me'] as const,
+  incomingRequests: ['chat', 'friend-requests', 'incoming'] as const,
 } as const;
 
 export function useCurrentUserId() {
@@ -26,6 +27,59 @@ export function useCurrentUser() {
       return res.user ?? null;
     },
     staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Incoming pending friend requests. No socket event exists for these, so we
+ * poll on an interval to keep the notification list reasonably fresh.
+ */
+export function useIncomingRequests() {
+  return useQuery<IncomingFriendRequest[]>({
+    queryKey: chatKeys.incomingRequests,
+    queryFn: async () => (await chatApi.listIncomingRequests()).data ?? [],
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+/** Accept/decline an incoming friend request, refreshing the request list + rooms. */
+export function useRespondToFriendRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requesterId, action }: { requesterId: string; action: 'accept' | 'decline' }) =>
+      action === 'accept'
+        ? chatApi.acceptFriendRequest(requesterId)
+        : chatApi.declineFriendRequest(requesterId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: chatKeys.incomingRequests });
+      // Accept auto-creates a DM room on the backend — refresh the room list too.
+      qc.invalidateQueries({ queryKey: chatKeys.rooms });
+    },
+  });
+}
+
+/**
+ * Mark every message in a room as read for the current user. Optimistically
+ * zeroes the room's unreadCount in cache, then persists + refetches.
+ */
+export function useMarkRoomRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (roomId: string) => chatApi.markRoomRead(roomId),
+    onMutate: async (roomId: string) => {
+      await qc.cancelQueries({ queryKey: chatKeys.rooms });
+      const prev = qc.getQueryData<ChatRoom[]>(chatKeys.rooms);
+      qc.setQueryData<ChatRoom[]>(chatKeys.rooms, (rooms) =>
+        rooms?.map((r) => (r._id === roomId ? { ...r, unreadCount: 0 } : r)),
+      );
+      return { prev };
+    },
+    onError: (_e, _roomId, ctx) => {
+      if (ctx?.prev) qc.setQueryData(chatKeys.rooms, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: chatKeys.rooms }),
   });
 }
 
@@ -60,6 +114,7 @@ export function useSendMessageMutation(roomId: string | null) {
 export interface LastMessageSnapshot {
   content: string;
   senderId: string;
+  createdAt: string;
 }
 
 /**
@@ -81,7 +136,12 @@ export function useLastMessagePerRoom(): Record<string, LastMessageSnapshot> {
       ) {
         const msgs = query.state.data as ChatMessage[] | undefined;
         const last = msgs?.[msgs.length - 1];
-        if (last) init[key[2] as string] = { content: last.content, senderId: last.senderId };
+        if (last)
+          init[key[2] as string] = {
+            content: last.content,
+            senderId: last.senderId,
+            createdAt: last.createdAt,
+          };
       }
     }
     return init;
@@ -103,7 +163,7 @@ export function useLastMessagePerRoom(): Record<string, LastMessageSnapshot> {
         if (last) {
           setSnapshot((prev) => ({
             ...prev,
-            [roomId]: { content: last.content, senderId: last.senderId },
+            [roomId]: { content: last.content, senderId: last.senderId, createdAt: last.createdAt },
           }));
         }
       }

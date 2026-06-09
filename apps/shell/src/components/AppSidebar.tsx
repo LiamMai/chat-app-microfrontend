@@ -7,8 +7,10 @@ import {
   IconUsers,
   IconUserPlus,
   IconSettings,
+  IconLogout,
 } from '@tabler/icons-react';
 import { ROUTES } from '@/lib/constants';
+import { useCurrentUser, useLogout } from '@/lib/api/queries';
 
 const NAV_ITEMS = [
   { icon: IconMessages,  label: 'Messages',  path: ROUTES.MESSAGES,          exact: true },
@@ -31,6 +33,19 @@ function isActive(pathname: string, path: string, exact: boolean): boolean {
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const logout = useLogout();
+  const { data: user } = useCurrentUser();
+
+  function handleLogout() {
+    // Redirect once cookies are cleared, whether or not the backend revoke succeeds.
+    logout.mutate(undefined, {
+      onSettled: () => router.replace(ROUTES.LOGIN),
+    });
+  }
+  const displayName = user ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : '';
+  const initials = user
+    ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
+    : '?';
 
   return (
     <aside style={{
@@ -98,6 +113,42 @@ export function AppSidebar() {
         })}
       </nav>
 
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        disabled={logout.isPending}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          width: '100%',
+          padding: '10px 12px',
+          marginBottom: 12,
+          border: 'none',
+          borderRadius: 10,
+          cursor: logout.isPending ? 'default' : 'pointer',
+          background: 'transparent',
+          color: '#8b9dc3',
+          fontWeight: 400,
+          fontSize: 14,
+          textAlign: 'left',
+          opacity: logout.isPending ? 0.6 : 1,
+          transition: 'background 0.15s, color 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          if (logout.isPending) return;
+          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.12)';
+          (e.currentTarget as HTMLButtonElement).style.color = '#ef4444';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+          (e.currentTarget as HTMLButtonElement).style.color = '#8b9dc3';
+        }}
+      >
+        <IconLogout size={18} />
+        <span>{logout.isPending ? 'Logging out…' : 'Logout'}</span>
+      </button>
+
       {/* User card */}
       <div style={{
         background: 'rgba(255,255,255,0.04)',
@@ -108,17 +159,25 @@ export function AppSidebar() {
         gap: 10,
         border: '1px solid rgba(255,255,255,0.08)',
       }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: '50%',
-          background: '#4d7af6', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', color: '#fff', fontWeight: 700,
-          fontSize: 12, flexShrink: 0,
-        }}>
-          AR
-        </div>
+        {user?.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={displayName}
+            style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+          />
+        ) : (
+          <div style={{
+            width: 34, height: 34, borderRadius: '50%',
+            background: '#4d7af6', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: '#fff', fontWeight: 700,
+            fontSize: 12, flexShrink: 0,
+          }}>
+            {initials}
+          </div>
+        )}
         <div style={{ minWidth: 0 }}>
           <div style={{ color: '#ffffff', fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Alex Rivera
+            {displayName || '…'}
           </div>
           <div style={{ color: '#4d7af6', fontSize: 11 }}>Pro Plan</div>
         </div>

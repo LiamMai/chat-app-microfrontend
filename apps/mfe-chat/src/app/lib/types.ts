@@ -26,6 +26,8 @@ export interface ChatRoom {
     senderId: string;
     createdAt: string;
   } | null;
+  /** Messages in this room not yet read by the current user (server-computed). */
+  unreadCount?: number;
 }
 
 export type MessageType = 'text' | 'image' | 'file';
@@ -48,6 +50,31 @@ export interface CurrentUser {
   username: string | null;
   avatarUrl: string | null;
   email: string;
+}
+
+/**
+ * One pending incoming friend request. The backend currently returns the
+ * relation row; `requester` (and the flat `*Name` fallbacks) are read
+ * defensively so the UI shows a real name when the API includes it and a
+ * sensible fallback when it doesn't.
+ */
+export interface IncomingFriendRequest {
+  id: string;
+  requesterId?: string;
+  userId?: string;
+  status?: string;
+  createdAt?: string;
+  requester?: {
+    id: string;
+    email?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    avatarUrl?: string | null;
+  } | null;
+  // flat fallbacks some payload shapes use
+  name?: string;
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
 export interface ApiEnvelope<T> {
