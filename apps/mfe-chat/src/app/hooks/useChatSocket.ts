@@ -8,6 +8,7 @@ import { useStableState } from './useStableState';
 
 const TYPING_IDLE_MS = 2000; // emit typing_stop after this much keyboard idle
 const SERVER_TYPING_TTL_MS = 5000; // backend expires typing entry after 5s; mirror locally
+const HEARTBEAT_MS = 20000; // < server PRESENCE_TTL (30s) so our own presence never expires
 
 interface UserTypingEvent {
   userId: string;
@@ -26,10 +27,16 @@ interface LegacyTypingEvent {
   roomId?: string;
 }
 
+interface PresenceEvent {
+  userId: string;
+}
+
 interface SocketState {
   socket: Socket | null;
   typingPerRoom: Record<string, UserTypingData[]>;
   unreadCounts: Record<string, number>;
+  /** userIds currently online — keyed for O(1) lookup. */
+  onlineUserIds: Record<string, true>;
 }
 
 function emitTypingState(socket: Socket, roomId: string, typing: boolean) {
@@ -70,12 +77,17 @@ export function useChatSocket(
   const qc = useQueryClient();
   const socketRef = useRef<Socket | null>(null);
   const joinedRoomRef = useRef<string | null>(null);
+  // Read inside socket listeners via ref so identity resolving (null → id)
+  // doesn't tear down and rebuild the whole socket setup effect.
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
 
-  const [{ socket, typingPerRoom, unreadCounts }, setState] =
+  const [{ socket, typingPerRoom, unreadCounts, onlineUserIds }, setState] =
     useStableState<SocketState>({
       socket: null,
       typingPerRoom: {},
       unreadCounts: {},
+      onlineUserIds: {},
     });
 
   // outer key: roomId, inner key: userId, value: expiry timestamp
@@ -118,11 +130,13 @@ export function useChatSocket(
         setState({ socket });
 
         const onNewMessage = (msg: ChatMessage) => {
-          appendMessageToCache(qc, msg);
-          // Fallback: invalidate by joined room in case msg.roomId field name
-          // doesn't match (server field mismatch makes setQueryData miss silently).
           const activeRoom = joinedRoomRef.current;
-          if (activeRoom) {
+          if (msg.roomId) {
+            // Optimistic insert — no refetch needed for the message list.
+            appendMessageToCache(qc, msg);
+          } else if (activeRoom) {
+            // Fallback only when msg.roomId is missing/renamed (server field
+            // mismatch makes setQueryData miss silently) — then refetch.
             qc.invalidateQueries({ queryKey: chatKeys.messages(activeRoom) });
           }
           qc.invalidateQueries({ queryKey: chatKeys.rooms });
@@ -137,7 +151,7 @@ export function useChatSocket(
         };
 
         const onUserTyping = (evt: UserTypingEvent) => {
-          if (evt.userId === currentUserId) return;
+          if (evt.userId === currentUserIdRef.current) return;
 
           if (!typingMapRef.current.has(evt.roomId)) {
             typingMapRef.current.set(evt.roomId, new Map());
@@ -161,6 +175,34 @@ export function useChatSocket(
           if (normalized) onUserTyping(normalized);
         };
 
+        const onOnlineSnapshot = (evt: { userIds?: string[] }) => {
+          const ids = evt?.userIds ?? [];
+          setState((prev) => {
+            const next = { ...prev.onlineUserIds };
+            for (const id of ids) next[id] = true;
+            return { onlineUserIds: next };
+          });
+        };
+
+        const onUserOnline = (evt: PresenceEvent) => {
+          if (!evt?.userId) return;
+          setState((prev) =>
+            prev.onlineUserIds[evt.userId]
+              ? {}
+              : { onlineUserIds: { ...prev.onlineUserIds, [evt.userId]: true } },
+          );
+        };
+
+        const onUserOffline = (evt: PresenceEvent) => {
+          if (!evt?.userId) return;
+          setState((prev) => {
+            if (!prev.onlineUserIds[evt.userId]) return {};
+            const next = { ...prev.onlineUserIds };
+            delete next[evt.userId];
+            return { onlineUserIds: next };
+          });
+        };
+
         // Re-join the active room on reconnect — server drops room membership on disconnect.
         const onReconnect = () => {
           const room = joinedRoomRef.current;
@@ -171,15 +213,26 @@ export function useChatSocket(
         socket.on('user_typing', onUserTyping);
         socket.on('typing_start', onTypingStart);
         socket.on('typing_stop', onTypingStop);
+        socket.on('online_users', onOnlineSnapshot);
+        socket.on('user_online', onUserOnline);
+        socket.on('user_offline', onUserOffline);
         socket.on('connect', onReconnect);
+
+        // Keep our own presence alive — server expires it after PRESENCE_TTL.
+        socket.emit('heartbeat');
+        const heartbeat = setInterval(() => socket.emit('heartbeat'), HEARTBEAT_MS);
 
         (
           socket as Socket & { __mfeChatCleanup?: () => void }
         ).__mfeChatCleanup = () => {
+          clearInterval(heartbeat);
           socket.off('new_message', onNewMessage);
           socket.off('user_typing', onUserTyping);
           socket.off('typing_start', onTypingStart);
           socket.off('typing_stop', onTypingStop);
+          socket.off('online_users', onOnlineSnapshot);
+          socket.off('user_online', onUserOnline);
+          socket.off('user_offline', onUserOffline);
           socket.off('connect', onReconnect);
         };
       })
@@ -197,7 +250,7 @@ export function useChatSocket(
       sock?.__mfeChatCleanup?.();
       setState({ socket: null });
     };
-  }, [qc, currentUserId]);
+  }, [qc]);
 
   // ── Sweep expired typing entries (server TTL = 5s) ─────────────────────────
   useEffect(() => {
@@ -333,5 +386,6 @@ export function useChatSocket(
     stopLocalTyping,
     unreadCounts,
     clearUnread,
+    onlineUserIds,
   };
 }

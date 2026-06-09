@@ -8,6 +8,8 @@ export interface Conversation {
   unread?: number;
   isGroup?: boolean;
   isOnline?: boolean;
+  /** Other member's userId for a DM (used to resolve live presence). Absent for groups. */
+  peerId?: string;
   statusIcon?: 'double-check' | 'single-check' | 'pin';
 }
 

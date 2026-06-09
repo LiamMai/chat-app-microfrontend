@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { chatApi } from './api';
 import type { ChatMessage, ChatRoom, CurrentUser, IncomingFriendRequest } from './types';
@@ -6,20 +6,20 @@ import type { ChatMessage, ChatRoom, CurrentUser, IncomingFriendRequest } from '
 export const chatKeys = {
   rooms:           ['chat', 'rooms'] as const,
   messages:        (roomId: string) => ['chat', 'rooms', roomId, 'messages'] as const,
-  currentUser:     ['chat', 'current-user'] as const,
   me:              ['chat', 'me'] as const,
   incomingRequests: ['chat', 'friend-requests', 'incoming'] as const,
 } as const;
 
-export function useCurrentUserId() {
-  return useQuery<string | null>({
-    queryKey: chatKeys.currentUser,
-    queryFn: async () => (await chatApi.fetchWsToken()).userId,
-    staleTime: 5 * 60_000,
-  });
-}
+/**
+ * When the chat MFE is embedded in the shell, the shell already fetched /me.
+ * `managed` flips every useCurrentUser() here to read the shell-supplied value
+ * from cache instead of issuing its own /me request — avoiding a duplicate even
+ * across the load race (shell /me still in flight when the MFE mounts).
+ */
+export const ExternalUserContext = createContext<{ managed: boolean }>({ managed: false });
 
 export function useCurrentUser() {
+  const { managed } = useContext(ExternalUserContext);
   return useQuery<CurrentUser | null>({
     queryKey: chatKeys.me,
     queryFn: async () => {
@@ -27,6 +27,8 @@ export function useCurrentUser() {
       return res.user ?? null;
     },
     staleTime: 5 * 60_000,
+    // Embedded: never fetch /me here — the shell seeds it via setQueryData.
+    enabled: !managed,
   });
 }
 

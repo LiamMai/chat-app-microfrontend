@@ -65,6 +65,7 @@ export function roomToConversation(
   const displayName = isGroup
     ? (room.name ?? 'Group')
     : userDisplayName(otherMember as ChatUser);
+  const peerId = isGroup ? undefined : memberId(otherMember) || undefined;
 
   // Prefer the latest message time; fall back to room activity.
   const timeIso =
@@ -79,6 +80,7 @@ export function roomToConversation(
     time: formatTime(timeIso),
     isGroup,
     isOnline: false,
+    peerId,
     unread: unreadCount,
   };
 }

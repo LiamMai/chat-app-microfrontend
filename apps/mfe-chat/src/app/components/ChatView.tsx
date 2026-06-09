@@ -137,8 +137,13 @@ export function ChatView({
             >
               {conversation.name}
             </div>
-            <div style={{ color: '#22c55e', fontSize: 12 }}>
-              {conversation.isOnline ? 'Online' : 'Last seen recently'}
+            <div
+              style={{
+                color: conversation.isOnline ? '#22c55e' : '#8b9dc3',
+                fontSize: 12,
+              }}
+            >
+              {conversation.isOnline ? 'Active Now' : 'Offline'}
             </div>
           </div>
         </div>

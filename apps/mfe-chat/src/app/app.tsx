@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { MantineProvider } from '@mantine/core';
 import { theme } from './lib/theme';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -9,8 +9,8 @@ import { ChatView } from './components/ChatView';
 import { queryClient } from './lib/queryClient';
 import {
   chatKeys,
+  ExternalUserContext,
   useCurrentUser,
-  useCurrentUserId,
   useIncomingRequests,
   useLastMessagePerRoom,
   useMarkRoomRead,
@@ -18,8 +18,8 @@ import {
   useRoomsQuery,
 } from './lib/queries';
 import { displayNameForMember, roomToConversation } from './lib/adapters';
-import { RoomType } from './lib/types';
-import { chatApi } from './lib/api';
+import type { Conversation } from './data/mock';
+import { RoomType, type CurrentUser } from './lib/types';
 import {
   buildFriendRequestNotifications,
   buildMessageNotifications,
@@ -32,35 +32,34 @@ import '../styles.scss';
 
 type ActiveView = 'messages' | 'chat' | 'notifications';
 
-function AppShell() {
+function AppShell({ embedded, initialCurrentUser }: { embedded: boolean; initialCurrentUser?: CurrentUser | null }) {
   const isMobile = useIsMobile();
   const [activeView, setActiveView] = useState<ActiveView>('messages');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
-  const qc = useQueryClient();
-  const { data: currentUserId = null } = useCurrentUserId();
+  // Embedded in the shell: mirror the shell-supplied user into the chat cache
+  // so useCurrentUser() (which is disabled here) reads it without a /me fetch.
+  useEffect(() => {
+    if (embedded) queryClient.setQueryData(chatKeys.me, initialCurrentUser ?? null);
+  }, [embedded, initialCurrentUser]);
+
   const { data: currentUser = null } = useCurrentUser();
+  // Identity comes from /me — no separate ws-token call just for the userId.
+  const currentUserId = currentUser?.id ?? null;
   const { data: rooms = [], isLoading } = useRoomsQuery();
   const { data: incomingRequests = [] } = useIncomingRequests();
   const lastMessagePerRoom = useLastMessagePerRoom();
   const respondToRequest = useRespondToFriendRequest();
   const markRoomRead = useMarkRoomRead();
 
-  useEffect(() => {
-    for (const room of rooms) {
-      if (room.lastMessage) continue;
-      qc.prefetchQuery({
-        queryKey: chatKeys.messages(room._id),
-        queryFn: async () => (await chatApi.getMessages(room._id)).data.slice().reverse(),
-        staleTime: 60_000,
-      });
-    }
-  }, [rooms, qc]);
-
   const roomIds = useMemo(() => rooms.map((r) => r._id), [rooms]);
 
-  const { sendViaSocket, typingPerRoom, notifyLocalTyping, stopLocalTyping } =
+  const { sendViaSocket, typingPerRoom, notifyLocalTyping, stopLocalTyping, onlineUserIds } =
     useChatSocket(selectedRoomId, currentUserId, roomIds);
+
+  // A DM conversation is "online" when its peer has a live presence entry.
+  const withPresence = (c: Conversation): Conversation =>
+    c.peerId ? { ...c, isOnline: !!onlineUserIds[c.peerId] } : c;
 
   const activeTypingUsers = typingPerRoom[selectedRoomId ?? ''] ?? [];
 
@@ -96,11 +95,13 @@ function AppShell() {
         lastMessage = `${name}: ${content}`;
       }
 
-      return roomToConversation(r, currentUserId, lastMessage, r.unreadCount ?? 0, activityIso(r));
+      return withPresence(
+        roomToConversation(r, currentUserId, lastMessage, r.unreadCount ?? 0, activityIso(r)),
+      );
     });
   const selectedRoom = rooms.find((r) => r._id === selectedRoomId) ?? null;
   const selectedConversation = selectedRoom
-    ? roomToConversation(selectedRoom, currentUserId)
+    ? withPresence(roomToConversation(selectedRoom, currentUserId))
     : null;
 
   const totalUnread = rooms.reduce((sum, r) => sum + (r.unreadCount ?? 0), 0);
@@ -234,11 +235,24 @@ function EmptyChatState() {
   );
 }
 
-export function App() {
+export interface AppProps {
+  /**
+   * Current user supplied by the host shell (which already fetched /me).
+   * When this prop is passed, the MFE treats itself as embedded and never
+   * issues its own /me request — even before the value resolves.
+   */
+  currentUser?: CurrentUser | null;
+  /** Set by the shell to mark the MFE as embedded (disables the self /me fetch). */
+  embedded?: boolean;
+}
+
+export function App({ currentUser, embedded = false }: AppProps = {}) {
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark" forceColorScheme="dark">
       <QueryClientProvider client={queryClient}>
-        <AppShell />
+        <ExternalUserContext.Provider value={{ managed: embedded }}>
+          <AppShell embedded={embedded} initialCurrentUser={currentUser} />
+        </ExternalUserContext.Provider>
       </QueryClientProvider>
     </MantineProvider>
   );
