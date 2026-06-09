@@ -1,13 +1,33 @@
-import type { ApiEnvelope, ChatMessage, ChatRoom, CurrentUser } from './types';
+import type {
+  ApiEnvelope,
+  ChatMessage,
+  ChatRoom,
+  CurrentUser,
+  IncomingFriendRequest,
+} from './types';
 
 const SHELL_API = {
   AUTH_REFRESH: '/api/auth/refresh',
   ROOMS: '/api/chat/rooms',
   WS_TOKEN: '/api/auth/ws-token',
   USERS_ME: '/api/users/me',
+  FRIENDS_REQUESTS_IN: '/api/friends/requests/incoming',
 } as const;
 
 const LOGIN_PATH = '/login';
+
+/** Append query params to a path using URLSearchParams (no manual concatenation). */
+function withQuery(
+  path: string,
+  params: Record<string, string | number | undefined>,
+): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) search.set(key, String(value));
+  }
+  const qs = search.toString();
+  return qs ? `${path}?${qs}` : path;
+}
 
 let inflightRefresh: Promise<boolean> | null = null;
 
@@ -77,16 +97,23 @@ async function post<T>(path: string, body: unknown, authed = false): Promise<T> 
   return res.json() as Promise<T>;
 }
 
+async function patch<T>(path: string, authed = false): Promise<T> {
+  const init: RequestInit = { method: 'PATCH', credentials: 'include' };
+  const res = authed ? await authedFetch(path, init) : await fetch(path, init);
+  if (!res.ok) throw new Error(`PATCH ${path} -> ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export const chatApi = {
   listRooms: (page = 1, limit = 20) =>
     get<ApiEnvelope<ChatRoom[]>>(
-      `${SHELL_API.ROOMS}?page=${page}&limit=${limit}`,
+      withQuery(SHELL_API.ROOMS, { page, limit }),
       true,
     ),
 
   getMessages: (roomId: string, page = 1, limit = 50) =>
     get<ApiEnvelope<ChatMessage[]>>(
-      `${SHELL_API.ROOMS}/${roomId}/messages?page=${page}&limit=${limit}`,
+      withQuery(`${SHELL_API.ROOMS}/${roomId}/messages`, { page, limit }),
       true,
     ),
 
@@ -97,9 +124,24 @@ export const chatApi = {
       true,
     ),
 
+  markRoomRead: (roomId: string) =>
+    patch<ApiEnvelope<unknown>>(`${SHELL_API.ROOMS}/${roomId}/messages/read`, true),
+
   fetchWsToken: () =>
     get<{ success: boolean; token: string; userId: string | null }>(SHELL_API.WS_TOKEN),
 
   fetchMe: () =>
     get<{ success: boolean; user: CurrentUser | null }>(SHELL_API.USERS_ME, true),
+
+  listIncomingRequests: (page = 1, limit = 20) =>
+    get<ApiEnvelope<IncomingFriendRequest[]>>(
+      withQuery(SHELL_API.FRIENDS_REQUESTS_IN, { page, limit }),
+      true,
+    ),
+
+  acceptFriendRequest: (requesterId: string) =>
+    patch<ApiEnvelope<unknown>>(`/api/friends/${requesterId}/accept`, true),
+
+  declineFriendRequest: (requesterId: string) =>
+    patch<ApiEnvelope<unknown>>(`/api/friends/${requesterId}/decline`, true),
 };

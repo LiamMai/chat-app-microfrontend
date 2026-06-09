@@ -7,9 +7,10 @@ import {
   IconUsers,
   IconUserPlus,
   IconSettings,
+  IconLogout,
 } from '@tabler/icons-react';
 import { ROUTES } from '@/lib/constants';
-import { useCurrentUser } from '@/lib/api/queries';
+import { useCurrentUser, useLogout } from '@/lib/api/queries';
 
 const NAV_ITEMS = [
   { icon: IconMessages,  label: 'Messages',  path: ROUTES.MESSAGES,          exact: true },
@@ -32,7 +33,15 @@ function isActive(pathname: string, path: string, exact: boolean): boolean {
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const logout = useLogout();
   const { data: user } = useCurrentUser();
+
+  function handleLogout() {
+    // Redirect once cookies are cleared, whether or not the backend revoke succeeds.
+    logout.mutate(undefined, {
+      onSettled: () => router.replace(ROUTES.LOGIN),
+    });
+  }
   const displayName = user ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : '';
   const initials = user
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ''}`.toUpperCase()
@@ -103,6 +112,42 @@ export function AppSidebar() {
           );
         })}
       </nav>
+
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        disabled={logout.isPending}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          width: '100%',
+          padding: '10px 12px',
+          marginBottom: 12,
+          border: 'none',
+          borderRadius: 10,
+          cursor: logout.isPending ? 'default' : 'pointer',
+          background: 'transparent',
+          color: '#8b9dc3',
+          fontWeight: 400,
+          fontSize: 14,
+          textAlign: 'left',
+          opacity: logout.isPending ? 0.6 : 1,
+          transition: 'background 0.15s, color 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          if (logout.isPending) return;
+          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.12)';
+          (e.currentTarget as HTMLButtonElement).style.color = '#ef4444';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+          (e.currentTarget as HTMLButtonElement).style.color = '#8b9dc3';
+        }}
+      >
+        <IconLogout size={18} />
+        <span>{logout.isPending ? 'Logging out…' : 'Logout'}</span>
+      </button>
 
       {/* User card */}
       <div style={{

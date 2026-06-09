@@ -36,7 +36,7 @@ export const authServerApi = {
   refresh: (refreshToken: string) =>
     post<AuthData>(API_PATHS.AUTH_REFRESH, { refreshToken }),
 
-  logout: () => post<void>(API_PATHS.AUTH_LOGOUT, {}),
+  logout: (refreshToken: string) => post<void>(API_PATHS.AUTH_LOGOUT, { refreshToken }),
 };
 
 export const userServerApi = {

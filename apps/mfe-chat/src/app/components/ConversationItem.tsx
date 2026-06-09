@@ -19,6 +19,14 @@ export function ConversationItem({
   typingLabel,
 }: ConversationItemProps) {
   const avatarSize = compact ? 42 : 48;
+  const hasUnread = (conversation.unread ?? 0) > 0;
+  // Selected and unread rows both get the blue left accent (unread = subtler tint).
+  const accented = isSelected || hasUnread;
+  const restingBg = isSelected
+    ? 'rgba(77,122,246,0.12)'
+    : hasUnread
+    ? 'rgba(77,122,246,0.06)'
+    : 'transparent';
 
   return (
     <button
@@ -29,12 +37,12 @@ export function ConversationItem({
         gap: 12,
         width: '100%',
         padding: compact ? '8px 12px' : '10px 16px',
-        background: isSelected ? 'rgba(77,122,246,0.12)' : 'transparent',
+        background: restingBg,
         border: 'none',
-        borderLeft: isSelected ? '3px solid #4d7af6' : '3px solid transparent',
+        borderLeft: accented ? '3px solid #4d7af6' : '3px solid transparent',
         cursor: 'pointer',
         textAlign: 'left',
-        borderRadius: isSelected ? '0 12px 12px 0' : 12,
+        borderRadius: accented ? '0 12px 12px 0' : 12,
         transition: 'background 0.15s, border-color 0.15s',
       }}
       onMouseEnter={(e) => {
@@ -43,7 +51,7 @@ export function ConversationItem({
       }}
       onMouseLeave={(e) => {
         if (!isSelected)
-          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+          (e.currentTarget as HTMLButtonElement).style.background = restingBg;
       }}
     >
       {/* Avatar with optional group badge */}
@@ -77,8 +85,8 @@ export function ConversationItem({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
           <span style={{
-            color: isSelected ? '#ffffff' : '#ffffff',
-            fontWeight: isSelected ? 700 : 600,
+            color: '#ffffff',
+            fontWeight: isSelected || hasUnread ? 700 : 600,
             fontSize: compact ? 13 : 14,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -106,7 +114,8 @@ export function ConversationItem({
             </span>
           ) : (
             <span style={{
-              color: isSelected ? '#a0b4d6' : '#8b9dc3',
+              color: hasUnread ? '#c7d4ea' : isSelected ? '#a0b4d6' : '#8b9dc3',
+              fontWeight: hasUnread ? 600 : 400,
               fontSize: 12,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
