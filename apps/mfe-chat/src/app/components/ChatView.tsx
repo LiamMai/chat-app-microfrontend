@@ -12,8 +12,9 @@ import {
 import type { Conversation } from '../data/mock';
 import { Avatar } from './Avatar';
 import { TypingIndicator } from './TypingIndicator';
+import { EmojiPicker } from './EmojiPicker';
 import { useMessagesQuery, useSendMessageMutation } from '../lib/queries';
-import { messageToUiMessage } from '../lib/adapters';
+import { messageToUiMessage, formatDateSeparator, dayKey } from '../lib/adapters';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -50,6 +51,8 @@ export function ChatView({
   isMobile,
 }: ChatViewProps) {
   const [inputValue, setInputValue] = useState('');
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { data: rawMessages = [], isLoading } = useMessagesQuery(roomId);
   const sendMutation = useSendMessageMutation(roomId);
   
@@ -65,6 +68,7 @@ export function ChatView({
     const content = inputValue.trim();
     if (!content) return;
     setInputValue('');
+    setEmojiOpen(false);
     stopLocalTyping();
     if (!sendViaSocket(content)) {
       sendMutation.mutate(content);
@@ -76,6 +80,21 @@ export function ChatView({
     setInputValue(next);
     if (next.length === 0) stopLocalTyping();
     else notifyLocalTyping();
+  }
+
+  function insertEmoji(emoji: string) {
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? inputValue.length;
+    const end = el?.selectionEnd ?? inputValue.length;
+    const next = inputValue.slice(0, start) + emoji + inputValue.slice(end);
+    setInputValue(next);
+    notifyLocalTyping();
+    // Restore caret right after the inserted emoji.
+    requestAnimationFrame(() => {
+      el?.focus();
+      const caret = start + emoji.length;
+      el?.setSelectionRange(caret, caret);
+    });
   }
 
   return (
@@ -168,9 +187,6 @@ export function ChatView({
           scrollbarWidth: 'thin',
         }}
       >
-        {/* Date separator */}
-        <DateSeparator label="Today" />
-
         {isLoading && (
           <div style={{ color: '#8b9dc3', fontSize: 13, textAlign: 'center', padding: 12 }}>
             Loading messages…
@@ -183,9 +199,13 @@ export function ChatView({
           </div>
         )}
 
-        {/* Messages */}
-        {messages.map((msg) => (
+        {/* Messages — Telegram-style date separator before each new day */}
+        {messages.map((msg, i) => {
+          const showSeparator =
+            i === 0 || dayKey(msg.createdAt) !== dayKey(messages[i - 1].createdAt);
+          return (
           <div key={msg.id}>
+            {showSeparator && <DateSeparator label={formatDateSeparator(msg.createdAt)} />}
             <div
               style={{
                 display: 'flex',
@@ -254,7 +274,8 @@ export function ChatView({
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
       </div>
 
@@ -272,6 +293,7 @@ export function ChatView({
       {/* Message input */}
       <div
         style={{
+          position: 'relative',
           padding: '12px 16px',
           background: '#131929',
           borderTop: '1px solid rgba(255,255,255,0.08)',
@@ -281,6 +303,13 @@ export function ChatView({
           flexShrink: 0,
         }}
       >
+        {emojiOpen && (
+          <EmojiPicker
+            onSelect={insertEmoji}
+            onClose={() => setEmojiOpen(false)}
+          />
+        )}
+
         <button
           style={{
             width: 36,
@@ -299,6 +328,7 @@ export function ChatView({
         </button>
 
         <button
+          onClick={() => setEmojiOpen((v) => !v)}
           style={{
             background: 'transparent',
             border: 'none',
@@ -310,7 +340,7 @@ export function ChatView({
             flexShrink: 0,
           }}
         >
-          <IconMoodSmile size={22} color="#8b9dc3" />
+          <IconMoodSmile size={22} color={emojiOpen ? '#4d7af6' : '#8b9dc3'} />
         </button>
 
         <div
@@ -323,6 +353,7 @@ export function ChatView({
           }}
         >
           <input
+            ref={inputRef}
             type="text"
             placeholder="Type a message..."
             value={inputValue}

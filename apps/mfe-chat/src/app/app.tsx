@@ -123,7 +123,16 @@ function AppShell({ embedded, initialCurrentUser }: { embedded: boolean; initial
   };
 
   const handleBack = () => setActiveView('messages');
-  const handleOpenNotifications = () => setActiveView('notifications');
+  const handleOpenNotifications = () => {
+    setActiveView('notifications');
+    // Mark every message-room shown in the view as read. The unread badge is
+    // derived from per-room unread counts, so clearing them here drops the
+    // badge to 0 → NotificationBell auto-hides it. Friend requests are not
+    // "read" by viewing — they stay until accepted/declined.
+    for (const n of notifications) {
+      if (n.kind === 'message' && n.roomId) markRoomRead.mutate(n.roomId);
+    }
+  };
 
   const handleMarkAllRead = () => {
     for (const r of rooms) {

@@ -91,5 +91,35 @@ export function messageToUiMessage(msg: ChatMessage, currentUserId: string | nul
     text: msg.content,
     sender: msg.senderId === currentUserId ? 'me' : 'them',
     time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    createdAt: msg.createdAt,
   };
+}
+
+/**
+ * Telegram-style date separator label.
+ * - Today / Yesterday for recent days
+ * - "June 11" within the current year
+ * - "June 11, 2024" for older years
+ */
+export function formatDateSeparator(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+
+  if (d.toDateString() === now.toDateString()) return 'Today';
+
+  const yest = new Date(now);
+  yest.setDate(yest.getDate() - 1);
+  if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString([], {
+    month: 'long',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
+}
+
+/** Stable per-day key (local time) for grouping messages into date sections. */
+export function dayKey(iso: string): string {
+  return new Date(iso).toDateString();
 }

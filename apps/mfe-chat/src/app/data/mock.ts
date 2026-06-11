@@ -18,6 +18,8 @@ export interface Message {
   text: string;
   sender: 'me' | 'them';
   time: string;
+  /** Raw ISO timestamp — used to group messages into Telegram-style date sections. */
+  createdAt: string;
   reaction?: string;
 }
 
@@ -91,18 +93,21 @@ export const messages: Message[] = [
     text: 'Hey! Have you had a chance to review the Q4 roadmap I sent over this morning?',
     sender: 'them',
     time: '10:12 AM',
+    createdAt: '2024-08-12T10:12:00.000Z',
   },
   {
     id: '2',
     text: 'Just finished reading it. The focus on AI integration for the mobile app is definitely the right move. I have a few suggestions on the timeline though.',
     sender: 'me',
     time: '10:14 AM',
+    createdAt: '2024-08-12T10:14:00.000Z',
   },
   {
     id: '3',
     text: "Great. I'm free at 2 PM if you want to hop on a quick call to discuss the timeline adjustments.",
     sender: 'them',
     time: '10:15 AM',
+    createdAt: '2024-08-12T10:15:00.000Z',
     reaction: '👍 1',
   },
 ];
